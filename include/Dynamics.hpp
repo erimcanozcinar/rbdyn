@@ -20,7 +20,7 @@ struct ModelStateDerivative {
     Eigen::Matrix<double, -1, 1> ddq;
 };
 
-class RigidBodyDynamics {
+class RigidBodyDynamics{
     private:
     RigidBodyModel _model;
     Vec6 _gravity;
@@ -29,7 +29,7 @@ class RigidBodyDynamics {
     std::vector<CoordinateAxis> _jointAxes;
     ModelState _state;
     ModelStateDerivative _dstate;
-    vectorAligned<sMat> _Xup, _Xa, _X0, _Xfext;
+    vectorAligned<sMat> _Xup, _Xa, _X0;
     std::vector<sMat, Eigen::aligned_allocator<sMat>> _Xtree;
     vectorAligned<Vec6> _S, _v, _a, _ar, _a0, _c, _f, _fext, _p, _pc;
     std::vector<int> _parents;

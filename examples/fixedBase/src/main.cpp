@@ -48,15 +48,15 @@ int main(int argc, char** argv) {
         t = world.getWorldTime();
         dt = world.getTimeStep();
 
-        // for (auto& contact : robot->getContacts()) // LF:3, RF:2, LB:1, RB:0
-        // {
-        //     if (contact.skip()) continue;
-        //     if (robot->getBodyIdx("link") == contact.getlocalBodyIndex())
-        //     {
-        //         Fcon = -contact.getContactFrame().e().transpose() * contact.getImpulse().e() / dt;
-        //         Pcon = contact.getPosition().e().transpose();
-        //     }
-        // }
+        for (auto& contact : robot->getContacts()) // LF:3, RF:2, LB:1, RB:0
+        {
+            if (contact.skip()) continue;
+            if (robot->getBodyIdx("link2") == contact.getlocalBodyIndex())
+            {
+                Fcon = -contact.getContactFrame().e().transpose() * contact.getImpulse().e() / dt;
+                Pcon = contact.getPosition().e().transpose();
+            }
+        }
 
         Eigen::Vector3d ypr;
         ypr = Eigen::Quaterniond(quat(0), quat(1), quat(2), quat(3)).normalized().toRotationMatrix().eulerAngles(2,1,0);
@@ -109,8 +109,10 @@ int main(int argc, char** argv) {
         F <<  Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(2)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(2));
         robot->setGeneralizedForce(F);
         /* #endregion */
-        Dyn.applyExternalForce(2, Vec3(0,0,0), Vec6(10,0,0,10,5,0));
-        robot->setExternalForce(robot->getBodyIdx("link2"),{0,0,0},{10,5,0});
+        Dyn.applyExternalForce(2, Vec3(0,0,0.25), Vec6(0,0,0,10,0,0));
+        robot->setExternalForce(robot->getBodyIdx("link2"),{0,0,0.25},{10,0,0});
+        // robot->setExternalForce("Joint2",{10,0,0});
+        // robot->setExternalTorque(robot->getBodyIdx("link1"), {0,10,0});
                  
         server.integrateWorldThreadSafe();
 

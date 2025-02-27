@@ -61,16 +61,6 @@ namespace ori {
                                             (m(1, 0) - m(0, 1)));
     }
 
-    sMat matrixAdjoint(const sMat& X) {
-        RotMat E = X.block(0,0,3,3);
-        Mat3 nErx = X.block(3,0,3,3);
-        sMat out = sMat::Zero();
-        out.template topLeftCorner<3,3>() = E.transpose();
-        out.template topRightCorner<3,3>() = nErx.transpose();
-        out.template bottomRightCorner<3,3>() = E.transpose();
-        return out;
-    }
-
 }
 
 #endif

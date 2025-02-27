@@ -7,9 +7,8 @@
 #include "SpatialInertia.hpp"
 using namespace spatial;
 
-class RigidBodyModel {
-    private:
-    
+class RigidBodyModel {    
+    private:    
     bool isFixedBase = false;
     int linkID = -1;
     int jointID = -1;
@@ -27,7 +26,6 @@ class RigidBodyModel {
     std::vector<std::string> jointChilds;
     std::vector<int> jointParentIDs;
     std::vector<int> jointChildIDs;
-    std::vector<Eigen::Vector3d> jointLocations;
     std::vector<Eigen::Vector3d> jointRotations;
 
     JointType jointTypeConvert(const char* joint_type) {
@@ -317,6 +315,9 @@ class RigidBodyModel {
 
     int nBody; // number of rigid bodies (including fixed base)
     int nDof; // number of moveable joints
+
+    std::vector<Eigen::Vector3d> jointLocations;
+
     Eigen::Vector3d gravity; 
     std::vector<sMat, Eigen::aligned_allocator<sMat>> Xtree;
     std::vector<JointType> jointTypes;
