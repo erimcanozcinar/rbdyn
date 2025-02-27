@@ -13,7 +13,7 @@
 
 ModelState robotState;
 ModelStateDerivative robotDState;
-RigidBodyDynamics Dyn("/home/erim/rbdyn-main/examples/fixedBase/rsc/1dof.urdf");
+RigidBodyDynamics Dyn("/home/erim/rbdyn/examples/fixedBase/rsc/1dof.urdf");
 
 double t, dt;
 Eigen::VectorXd genCoordinates(1), genVelocity(1), F(1), quat(4); 

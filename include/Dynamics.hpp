@@ -46,6 +46,7 @@ class RigidBodyDynamics{
     void setState(const ModelState& dstate);
     void setDState(const ModelStateDerivative& dstate);
     void applyExternalForce(const int bodyId, const Vec3 &pos, const Vec6 &fext);
+    // void applyExternalForce(const int jointId, const Vec3 &force);
     void floatingBaseInvDyn(const ModelState &state, const ModelStateDerivative &dstate);
     void fixedBaseInvDyn(const ModelState &state, const ModelStateDerivative &dstate);
     void inverseDynamics(const ModelState &state, const ModelStateDerivative &dstate);

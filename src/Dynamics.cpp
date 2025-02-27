@@ -35,12 +35,12 @@ void RigidBodyDynamics::init(Vec3 gravity) {
 }
 
 JointType RigidBodyDynamics::getJointType(const std::string name) {
-    int jID = _model.getJointIDbyName(name);
+    int jID = _model.getJointID(name);
     return _jointTypes[jID];
 }
 
 CoordinateAxis RigidBodyDynamics::getJointAxis(const std::string name) {
-    int jID = _model.getJointIDbyName(name);
+    int jID = _model.getJointID(name);
     return _jointAxes[jID];
 }
 
@@ -52,13 +52,35 @@ void RigidBodyDynamics::setDState(const ModelStateDerivative& dstate) {
     _dstate = dstate;
 }
 
+/** Apply external torque and force on body in world frame.
+
+* @param[in] bodyId Body index. It can be retrieved by getLinkID() or getBodyIdx().
+* @param[in] fext Torques and forces acting on body in world frame. (fext = [torques; forces])
+* @param[in] pos Position of point with respec to body frame where the force is applied */
 void RigidBodyDynamics::applyExternalForce(const int bodyId, const Vec3 &pos, const Vec6 &fext) {
     sMat X = sMat::Zero();
-    X.topLeftCorner<3,3>() = _X0[bodyId-1].topLeftCorner<3,3>();
-    X.bottomLeftCorner<3,3>() = vectorToSkewMat(Vec3(0,0,0.25)+_Xup[bodyId].topLeftCorner<3,3>()*pos);
-    X.bottomRightCorner<3,3>() = _X0[bodyId-1].bottomRightCorner<3,3>();
-    _fext[bodyId-1] = (X.transpose()).inverse()*fext;
+    Vec3 pos_w = _X0[bodyId].topLeftCorner<3,3>().transpose()*pos;
+    X.topLeftCorner<3,3>() = _X0[bodyId].topLeftCorner<3,3>();
+    X.bottomLeftCorner<3,3>() = _X0[bodyId].topLeftCorner<3,3>()*vectorToSkewMat(pos_w);
+    X.bottomRightCorner<3,3>() = _X0[bodyId].bottomRightCorner<3,3>();
+    _fext[bodyId] = (X.transpose()).inverse()*fext;
 }
+
+// /** Apply external force on joint in world frame.
+//  * Note: this method does not apply torque on joint. This method only apply force. 
+//  * If you want to apply torque on joint, simply apply torque on child body of the joint 
+// * @param[in] jointId Body index. It can be retrieved by getLinkID() or getBodyIdx().
+// * @param[in] force Forces acting on joint in body frame. (force = [forces]) */
+// void RigidBodyDynamics::applyExternalForce(const int jointId, const Vec3 &force) {
+//     sMat X = sMat::Zero();
+//     Vec6 fext = Vec6::Zero();
+//     fext.bottomRows<3>() = force;
+//     int bodyId = _model.jointParentIDs[jointId];
+//     X.topLeftCorner<3,3>() = _X0[bodyId].topLeftCorner<3,3>();
+//     X.bottomLeftCorner<3,3>() = _X0[bodyId].topLeftCorner<3,3>()*vectorToSkewMat(_model.jointLocations[jointId]);
+//     X.bottomRightCorner<3,3>() = _X0[bodyId].bottomRightCorner<3,3>();
+//     _fext[bodyId] = (X.transpose()).inverse()*fext;
+// }
 
 void RigidBodyDynamics::floatingBaseInvDyn(const ModelState &state, const ModelStateDerivative &dstate) {
     setState(state);
@@ -69,26 +91,28 @@ void RigidBodyDynamics::floatingBaseInvDyn(const ModelState &state, const ModelS
 
     sMat Xfb = sMat::Zero();
     // Xfb << _state.baseR, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), _state.baseR;
-    Xfb = spatialTransform(_state.baseR, _state.basePosition);
-    _v[0] = Xfb*_state.baseVelocity;
-    _ar[0] = -_gravity;
+    _Xup[0] = spatialTransform(_state.baseR, _state.basePosition);
+    _X0[0] = _Xup[0];
+    _v[0] = _Xup[0]*_state.baseVelocity;
+    _ar[0] = -_Xup[0]*_gravity;
 
     for(int i = 1; i < _model.nBody; i++) {
         Vec6 vJ = Vec6::Zero();
         sMat Xj = sMat::Zero();
         Xj = jointSpatialTransform(_jointTypes[i], _jointAxes[i], _state.q[i-1]);
         _Xup[i] = Xj*_Xtree[i];
+        _X0[i] = _Xup[i]*_X0[_parents[i]];
         _S[i] = jointMotionSubspace(_jointTypes[i], _jointAxes[i]);
         vJ = _S[i]*_state.dq[i-1];
         _v[i] = _Xup[i]*_v[_parents[i]] + vJ;
 
         _ar[i] = _Xup[i] * _ar[_parents[i]] + crm(_v[i])*vJ + _S[i] * _dstate.ddq[i-1];
         _Ic[i] = _Ibody[i].getMatrix();
-        _pc[i] = _Ibody[i].getMatrix() * _ar[i] + crf(_v[i])*_Ibody[i].getMatrix()*_v[i];
+        _pc[i] = _Ibody[i].getMatrix() * _ar[i] + crf(_v[i])*_Ibody[i].getMatrix()*_v[i] - _fext[i];
     }
     
     _Ic[0] = _Ibody[0].getMatrix();
-    _pc[0] = _Ibody[0].getMatrix()*_ar[0] + crf(_v[0])*_Ibody[0].getMatrix()*_v[0];
+    _pc[0] = _Ibody[0].getMatrix()*_ar[0] + crf(_v[0])*_Ibody[0].getMatrix()*_v[0] - _fext[0];
     for(int i = _model.nBody-1; i>0; i--) {
         _Ic[_parents[i]] = _Ic[_parents[i]] + _Xup[i].transpose()*_Ic[i]*_Xup[i];
         _pc[_parents[i]] = _pc[_parents[i]] + _Xup[i].transpose()*_pc[i];
@@ -126,11 +150,6 @@ void RigidBodyDynamics::fixedBaseInvDyn(const ModelState &state, const ModelStat
         Xj = jointSpatialTransform(_jointTypes[i], _jointAxes[i], _state.q[i-1]);
         _Xup[i] = Xj*_Xtree[i];
         _X0[i] = _Xup[i]*_X0[_parents[i]];
-        // if(_parents[i] != 0) {
-        //     _X0[i] = _Xup[i]*_X0[_parents[i]];
-        // } else {
-        //     _X0[i] = _Xup[i];
-        // }
         _S[i] = jointMotionSubspace(_jointTypes[i], _jointAxes[i]);
         vJ = _S[i]*_state.dq[i-1];
         _v[i] = _Xup[i]*_v[_parents[i]] + vJ;
@@ -145,7 +164,7 @@ void RigidBodyDynamics::fixedBaseInvDyn(const ModelState &state, const ModelStat
         }
     }
     // for(int i=0; i<_model.nBody; i++){
-    //     std::cout << _X0[i] << std::endl;
+    //     std::cout << _Xup[i] << std::endl;
     //     std::cout << "----------" << std::endl;
     // }
         

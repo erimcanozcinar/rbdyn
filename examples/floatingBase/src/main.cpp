@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     auto ground = world.addGround(0, "steel");
     // ground->setAppearance("hidden");
 
-    auto robot = world.addArticulatedSystem("/home/erim/RaiSim_Simulations/invDyn_test/invDyn_test/rsc/1dof_2.urdf");
+    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/floatingBase/rsc/1dof_2.urdf");
     /* #endregion */
     
   
@@ -25,8 +25,6 @@ int main(int argc, char** argv) {
     /* #endregion */
 
     /* #region: Create Log file */
-    FILE* fp0;
-    fp0 = fopen("/home/erim/RaiSim_Simulations/invDyn_test/invDyn_test/Log/dataLog.txt", "w");
     /* #endregion */
 
     /* #region: Launch raisim server for visualization.Can be visualized on raisimUnity */
@@ -46,7 +44,7 @@ int main(int argc, char** argv) {
     Dyn.init(world.getGravity().e());
 
     // Fcon.setZero(); Pcon.setZero();
-    for (int loop = 0; loop < 5050; loop++) {
+    for (int loop = 0; loop < 5150; loop++) {
         RS_TIMED_LOOP(int(world.getTimeStep()*1e6));
         t = world.getWorldTime();
         dt = world.getTimeStep();

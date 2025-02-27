@@ -23,9 +23,7 @@ class RigidBodyModel {
     std::vector<std::string> jointNames;
     std::vector<int> jointIDs;
     std::vector<std::string> jointParents;
-    std::vector<std::string> jointChilds;
-    std::vector<int> jointParentIDs;
-    std::vector<int> jointChildIDs;
+    std::vector<std::string> jointChilds;    
     std::vector<Eigen::Vector3d> jointRotations;
 
     JointType jointTypeConvert(const char* joint_type) {
@@ -110,8 +108,8 @@ class RigidBodyModel {
 
         jointParents.push_back(std::string(joint->FirstChildElement("parent")->Attribute("link")));
         jointChilds.push_back(std::string(joint->FirstChildElement("child")->Attribute("link")));
-        jointParentIDs.push_back(getLinkIDbyName(jointParents[jointID]));        
-        jointChildIDs.push_back(getLinkIDbyName(jointChilds[jointID]));
+        jointParentIDs.push_back(getLinkID(jointParents[jointID]));        
+        jointChildIDs.push_back(getLinkID(jointChilds[jointID]));
         
         jointAxes.push_back(jointAxisConvert(joint->FirstChildElement("axis")->Attribute("xyz")));
 
@@ -184,10 +182,10 @@ class RigidBodyModel {
             jointNames.insert(jointNames.begin(), "Floating Base");
             jointIDs.insert(jointIDs.begin(), 0);
             jointTypes.insert(jointTypes.begin(), JointType::Floating);
-            jointParents.insert(jointParents.begin(), "none");
-            jointChilds.insert(jointChilds.begin(), std::string(baseChild));
+            jointParents.insert(jointParents.begin(), "world");
+            jointChilds.insert(jointChilds.begin(), linkNames[0]);
             jointParentIDs.insert(jointParentIDs.begin(), -1);        
-            jointChildIDs.insert(jointChildIDs.begin(), getLinkIDbyName(std::string(baseChild)));
+            jointChildIDs.insert(jointChildIDs.begin(), getLinkID(linkNames[0]));
             jointAxes.insert(jointAxes.begin(), CoordinateAxis::None);
             jointLocations.insert(jointLocations.begin(), Eigen::Vector3d::Zero());
             jointRotations.insert(jointRotations.begin(), Eigen::Vector3d::Zero());
@@ -195,10 +193,10 @@ class RigidBodyModel {
             jointNames.insert(jointNames.begin(), "Fixed Base");
             jointIDs.insert(jointIDs.begin(), 0);
             jointTypes.insert(jointTypes.begin(), JointType::Fixed);
-            jointParents.insert(jointParents.begin(), "none");
+            jointParents.insert(jointParents.begin(), "world");
             jointChilds.insert(jointChilds.begin(), std::string(baseChild));
             jointParentIDs.insert(jointParentIDs.begin(), -1);        
-            jointChildIDs.insert(jointChildIDs.begin(), getLinkIDbyName(std::string(baseChild)));
+            jointChildIDs.insert(jointChildIDs.begin(), getLinkID(std::string(baseChild)));
             jointAxes.insert(jointAxes.begin(), CoordinateAxis::None);
 
             const char* baseJointPos = robot->FirstChildElement("joint")->FirstChildElement("origin")->Attribute("xyz");
@@ -316,6 +314,8 @@ class RigidBodyModel {
     int nBody; // number of rigid bodies (including fixed base)
     int nDof; // number of moveable joints
 
+    std::vector<int> jointParentIDs;
+    std::vector<int> jointChildIDs;
     std::vector<Eigen::Vector3d> jointLocations;
 
     Eigen::Vector3d gravity; 
@@ -325,7 +325,7 @@ class RigidBodyModel {
     std::vector<int> parents;
     std::vector<SpatialInertia, Eigen::aligned_allocator<SpatialInertia>> Ibody;
 
-    int getLinkIDbyName(const std::string& name) {
+    int getLinkID(const std::string& name) {
         auto it = std::find(linkNames.begin(), linkNames.end(), name);
         
         if (it != linkNames.end()) {
@@ -336,7 +336,7 @@ class RigidBodyModel {
         }
     }
 
-    int getJointIDbyName(const std::string& name) {
+    int getJointID(const std::string& name) {
         auto it = std::find(jointNames.begin(), jointNames.end(), name);
         
         if (it != jointNames.end()) {
@@ -360,7 +360,9 @@ class RigidBodyModel {
             parents.push_back(jointParentIDs[i]);
             Ibody.push_back(bodyInertia);
         }
-        printModelInfo();
+        // printModelInfo();
+        printURDFInfo();
+
     }
 
 };
