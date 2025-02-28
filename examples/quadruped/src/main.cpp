@@ -10,16 +10,16 @@ int main(int argc, char** argv) {
     world.setTimeStep(0.001);
     world.setMaterialPairProp("steel", "steel", 0.95, 0.95, 0.001, 0.95, 0.001);
     world.setMaterialPairProp("steel", "rubber", 2, 0.15, 0.001, 2, 0.001);
-    // auto ground = world.addGround(0, "steel");
+    auto ground = world.addGround(0, "steel");
     // ground->setAppearance("hidden");
 
-    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/floatingBase/rsc/1dof_float2.urdf");
+    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/quadruped/rsc/urdf/tekir3mesh_new_V2copy.urdf");
     /* #endregion */
     
   
     /* #region: Initialize Robot */
-    genCoordinates << 0, 0, 0.15, 1, 0, 0, 0, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180;
-    genVelocity << 0, 0, 0, 0, 0, 0, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180;
+    genCoordinates << 0, 0, 0.75, 1, 0, 0, 0, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180;
+    genVelocity << 0, 0, 0, 0, 0, 0, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180;
     robot->setGeneralizedCoordinate(genCoordinates);
     robot->setGeneralizedVelocity(genVelocity);
     /* #endregion */
@@ -59,20 +59,18 @@ int main(int argc, char** argv) {
         //     }
         // }
 
-        Eigen::Vector3d ypr;
-        ypr = Eigen::Quaterniond(quat(0), quat(1), quat(2), quat(3)).normalized().toRotationMatrix().eulerAngles(2,1,0);
         quat = robot->getGeneralizedCoordinate().e().block(3,0,4,1);
 
         robotState.basePosition = robot->getGeneralizedCoordinate().e().head(3);
         robotState.baseOrientation = Eigen::Quaterniond(quat(0), quat(1), quat(2), quat(3)).normalized();
         robotState.baseR = quat2RotMat(Eigen::Quaterniond(quat(0), quat(1), quat(2), quat(3)));
         robotState.baseVelocity << robot->getGeneralizedVelocity().e().block(3,0,3,1), robot->getGeneralizedVelocity().e().head(3);
-        robotState.q = robot->getGeneralizedCoordinate().e().tail(3);
-        robotState.dq = robot->getGeneralizedVelocity().e().tail(3);
+        robotState.q = robot->getGeneralizedCoordinate().e().tail(12);
+        robotState.dq = robot->getGeneralizedVelocity().e().tail(12);
 
         robotDState.dBasePosition = robot->getGeneralizedVelocity().e().head(3);
         robotDState.dBaseVelocity << robot->getGeneralizedAcceleration().e().block(3,0,3,1), robot->getGeneralizedAcceleration().e().head(3);
-        robotDState.ddq = robot->getGeneralizedAcceleration().e().tail(3);
+        robotDState.ddq = robot->getGeneralizedAcceleration().e().tail(12);
         
         /* #region: RaiSim Inverse Dynamics */
         for (int j=0; j<robot->getDOF()-6; j++) {
@@ -96,16 +94,23 @@ int main(int argc, char** argv) {
 
         /* #region: PD control */
         if(t>=5)
-            refQ << 40*M_PI/180, -40*M_PI/180, -40*M_PI/180;
+            // refQ << 10*M_PI/180, 30*M_PI/180, -60*M_PI/180,
+            //         -10*M_PI/180, -30*M_PI/180, 60*M_PI/180,
+            //         -10*M_PI/180, 30*M_PI/180, -60*M_PI/180,
+            //         10*M_PI/180, -30*M_PI/180, 60*M_PI/180;
+            refQ << 10*M_PI/180, 30*M_PI/180, -60*M_PI/180,
+                    0*M_PI/180, 0*M_PI/180, 0*M_PI/180,
+                    0*M_PI/180, 0*M_PI/180, 0*M_PI/180,
+                    0*M_PI/180, 0*M_PI/180, 0*M_PI/180;
         else
-            refQ << 0*M_PI/180, 0*M_PI/180, 0*M_PI/180;
+            refQ.setZero();
 
-        refdQ << 0, 0, 0;
-        Eigen::Matrix3d Kp, Kd;
+        refdQ.setZero();
+        Eigen::MatrixXd Kp(12,12), Kd(12,12);
         Kp.setIdentity(); Kd.setIdentity();
         Kp = 50*Kp;
         Kd = 3*Kd;
-        F << 0, 0, 0, 0, 0, 0, Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(3)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(3));
+        F << 0, 0, 0, 0, 0, 0, Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(12)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(12));
         robot->setGeneralizedForce(F);
         /* #endregion */
         // Dyn.applyExternalForce(2, Vec3(0,0,0.25), Vec6(0,0,0,10,0,0));

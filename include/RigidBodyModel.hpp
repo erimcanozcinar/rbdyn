@@ -38,11 +38,11 @@ class RigidBodyModel {
     }
 
     CoordinateAxis jointAxisConvert(const char* joint_axis) {
-        if(strcmp(joint_axis, "1 0 0") == 0)
+        if(strcmp(joint_axis, "1 0 0") == 0 || strcmp(joint_axis, "-1 0 0") == 0)
             return CoordinateAxis::X;
-        else if(strcmp(joint_axis, "0 1 0") == 0)
+        else if(strcmp(joint_axis, "0 1 0") == 0 || strcmp(joint_axis, "0 -1 0") == 0)
             return CoordinateAxis::Y;
-        else if(strcmp(joint_axis, "0 0 1") == 0)
+        else if(strcmp(joint_axis, "0 0 1") == 0 || strcmp(joint_axis, "0 0 -1") == 0)
             return CoordinateAxis::Z;
         else
             return CoordinateAxis::None;
@@ -212,100 +212,121 @@ class RigidBodyModel {
     }
   
     void printURDFInfo() {
-        std::cout << "Link Names: " << std::endl;
+        std::cout << "\033[35m  URDF INFORMATION \033[0m" << std::endl;
+
+        std::cout << "\n";
+        std::cout << "\033[32mLink Names: \033[0m" << std::endl;
         for(std::string name : linkNames) {
             std::cout << name << std::endl;
         }
-        std::cout << "Link IDs: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mLink IDs: \033[0m" << std::endl;
         for(int id : linkIDs) {
             std::cout << id << std::endl;
         }
-        std::cout << "Link CoM: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mLink CoM: \033[0m" << std::endl;
         for(Eigen::Vector3d com : linkCOMs) {
             std::cout << com.transpose() << std::endl;
         }
-        std::cout << "Link Rot: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mLink Rot: \033[0m" << std::endl;
         for(Eigen::Vector3d rot : linkRots) {
             std::cout << rot.transpose() << std::endl;
         }
-        std::cout << "Link Mass: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mLink Mass: \033[0m" << std::endl;
         for(double mass : linkMasses) {
             std::cout << mass << std::endl;
         }
-        std::cout << "Link Inertia: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mLink Inertia: \033[0m" << std::endl;
         for(Eigen::Matrix3d inertia : linkInertias) {
             std::cout << inertia << std::endl;
         }
 
 
-        std::cout << "Joint Names: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mJoint Names: \033[0m" << std::endl;
         for(std::string name : jointNames) {
             std::cout << name << std::endl;
         }
-        std::cout << "Joint IDs: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mJoint IDs: \033[0m" << std::endl;
         for(int id : jointIDs) {
             std::cout << id << std::endl;
         }
-        std::cout << "Joint Types: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mJoint Types: \033[0m" << std::endl;
         for(JointType type : jointTypes) {
             std::cout << toString(type) << std::endl;
         }
-        std::cout << "Joint Parents: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mJoint Parents: \033[0m" << std::endl;
         for(std::string parent : jointParents) {
             std::cout << parent << std::endl;
         }
-        std::cout << "Joint Parent IDs: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mJoint Parent IDs: \033[0m" << std::endl;
         for(int id : jointParentIDs) {
             std::cout << id << std::endl;
         }
-        std::cout << "Joint Childs: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mJoint Childs: \033[0m" << std::endl;
         for(std::string child : jointChilds) {
             std::cout << child << std::endl;
         }
-        std::cout << "Joint Child IDs: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mJoint Child IDs: \033[0m" << std::endl;
         for(int id : jointChildIDs) {
             std::cout << id << std::endl;
         }
-        std::cout << "Joint Axes: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mJoint Axes: \033[0m" << std::endl;
         for(CoordinateAxis axis : jointAxes) {
             std::cout << toString(axis) << std::endl;
         }
-        std::cout << "Joint Locations: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mJoint Locations: \033[0m" << std::endl;
         for(Eigen::Vector3d loc : jointLocations) {
             std::cout << loc.transpose() << std::endl;
         }
-        std::cout << "Joint Rotations: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mJoint Rotations: \033[0m" << std::endl;
         for(Eigen::Vector3d rot : jointRotations) {
             std::cout << rot.transpose() << std::endl;
         }
     }
 
     void printModelInfo() {
-        std::cout << "Xtree: " << std::endl;
+        std::cout << "\033[35m  RIGID BODY MODEL INFORMATION \033[0m" << std::endl;
+
+        std::cout << "\n";
+        std::cout << "\033[32mXtree: \033[0m" << std::endl;
         for(int i=0; i<nBody; i++) {
             std::cout << Xtree[i] << std::endl;
-            std::cout << "--------------- " << std::endl;
+            std::cout << "---------------\033[0m" << std::endl;
         }
-        std::cout << "********************** " << std::endl;
-        std::cout << "Joint Types: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mJoint Types: \033[0m" << std::endl;
         for(int i=0; i<nBody; i++) {
             std::cout << toString(jointTypes[i]) << std::endl;
         }
-        std::cout << "********************** " << std::endl;
-        std::cout << "Joint Axes: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mJoint Axes: \033[0m" << std::endl;
         for(int i=0; i<nBody; i++) {
             std::cout << toString(jointAxes[i]) << std::endl;
         }
-        std::cout << "********************** " << std::endl;
-        std::cout << "Parent Bodies: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mParent Bodies: \033[0m" << std::endl;
         for(int i=0; i<nBody; i++) {
             std::cout << parents[i] << std::endl;
         }
-        std::cout << "********************** " << std::endl;
-        std::cout << "Spatial Inertia: " << std::endl;
+        std::cout << "\n";
+        std::cout << "\033[32mSpatial Inertia: \033[0m" << std::endl;
         for(int i=0; i<nBody; i++) {
             std::cout << Ibody[i].getMatrix() << std::endl;
-            std::cout << "--------------- " << std::endl;
+            std::cout << "---------------" << std::endl;
         }
     }
 
@@ -360,8 +381,8 @@ class RigidBodyModel {
             parents.push_back(jointParentIDs[i]);
             Ibody.push_back(bodyInertia);
         }
-        // printModelInfo();
         printURDFInfo();
+        printModelInfo();
 
     }
 

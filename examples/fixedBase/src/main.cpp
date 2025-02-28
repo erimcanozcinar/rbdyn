@@ -13,13 +13,13 @@ int main(int argc, char** argv) {
     auto ground = world.addGround(0, "steel");
     // ground->setAppearance("hidden");
 
-    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/fixedBase/rsc/1dof.urdf");
+    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/fixedBase/rsc/1dof2.urdf");
     /* #endregion */
     
   
     /* #region: Initialize Robot */
-    genCoordinates << 0*M_PI/180, 0*M_PI/180; 
-    genVelocity << 0, 0;
+    genCoordinates << 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180; 
+    genVelocity << 0, 0, 0, 0;
     robot->setGeneralizedCoordinate(genCoordinates);
     robot->setGeneralizedVelocity(genVelocity);
     /* #endregion */
@@ -98,18 +98,19 @@ int main(int argc, char** argv) {
 
         /* #region: PD control */
         if(t>=5)
-            refQ << 110*M_PI/180, -0*M_PI/180;
+            refQ << 10*M_PI/180, -10*M_PI/180, 10*M_PI/180, 10*M_PI/180;
         else
-            refQ << 0*M_PI/180, 0*M_PI/180;
+            refQ << 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180;
 
-        refdQ << 0, 0;
-        Eigen::Matrix2d Kp, Kd;
-        Kp << 50, 0, 0, 50;
-        Kd << 3, 0, 0, 3;
-        F <<  Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(2)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(2));
+        refdQ << 0, 0, 0, 0;
+        Eigen::Matrix4d Kp, Kd;
+        Kp.setIdentity(); Kd.setIdentity();
+        Kp = 50*Kp;
+        Kd = 3*Kd;
+        F <<  Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(4)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(4));
         robot->setGeneralizedForce(F);
         /* #endregion */
-        Dyn.applyExternalForce(2, Vec3(0.01,0,0.25), Vec6(0,0,0,Fcon(0),Fcon(1),Fcon(2)));
+        // Dyn.applyExternalForce(2, Vec3(0.01,0,0.25), Vec6(0,0,0,Fcon(0),Fcon(1),Fcon(2)));
         // Dyn.applyExternalForce(1, Vec3(0,0,0.125), Vec6(0,0,0,10,0,0));
         // robot->setExternalForce(robot->getBodyIdx("link1"),{10,0,0});
         // robot->setExternalTorque(robot->getBodyIdx("link2"), {10,0,0});

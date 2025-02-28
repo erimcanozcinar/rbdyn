@@ -94,7 +94,7 @@ void RigidBodyDynamics::floatingBaseInvDyn(const ModelState &state, const ModelS
     _Xup[0] = spatialTransform(_state.baseR, _state.basePosition);
     _X0[0] = _Xup[0];
     _v[0] = _Xup[0]*_state.baseVelocity;
-    _ar[0] = -_Xup[0]*_gravity;
+    _ar[0] = -_gravity;
 
     for(int i = 1; i < _model.nBody; i++) {
         Vec6 vJ = Vec6::Zero();

@@ -13,11 +13,11 @@
 
 ModelState robotState;
 ModelStateDerivative robotDState;
-RigidBodyDynamics Dyn("/home/erim/rbdyn/examples/fixedBase/rsc/1dof2.urdf");
+RigidBodyDynamics Dyn("/home/erim/rbdyn/examples/quadruped/rsc/urdf/tekir3mesh_new_V2copy.urdf");
 
 double t, dt;
-Eigen::VectorXd genCoordinates(4), genVelocity(4), F(4), quat(4); 
-Eigen::VectorXd refQ(4), refdQ(4), jffTorques(4), TauJoint(7);
+Eigen::VectorXd genCoordinates(19), genVelocity(18), F(18), quat(4); 
+Eigen::VectorXd refQ(12), refdQ(12), jffTorques(2), TauJoint(7);
 
 raisim::Mat<3,3> frameOri;
 

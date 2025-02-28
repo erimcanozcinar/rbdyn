@@ -28,7 +28,6 @@
     <color rgba="1.0 1.0 1.0 1.0"/>
   </material>
 
-  <!-- <link name="world"/> -->
 
   <link name="trunk">
 	 <inertial>
@@ -95,16 +94,31 @@
     </collision>
   </link>
 
+  <link name="link3">
+	  <inertial>
+     <origin xyz="0 0 0.125" rpy="0 0 0"/>
+     <mass value="1"/>
+     <inertia ixx="0.005"  ixy="0"  ixz="0" iyy="0.005" iyz="0" izz="0.00005" />
+    </inertial>
+	  <visual>
+     <origin xyz="0 0 0.125" rpy="0 0 0" />
+     <geometry>
+       <cylinder radius="0.01" length="0.250"/>
+     </geometry>
+     <material name="orange"/>
+    </visual>
+	  <collision>
+     <origin xyz="0 0 0.125" rpy="0 0 0"/>
+     <geometry>
+       <cylinder radius="0.01" length="0.250"/>
+     </geometry>
+    </collision>
+  </link>
+
 
   
 
   <!-- Joints -->
-  <!-- <joint name="Joint0" type="floating">
-    <parent link="world"/>
-    <child link="trunk"/>
-    <axis xyz="0 0 0"/>
-    <origin xyz="0 0 0.15" rpy="0 0 0" />
-  </joint> -->
 
   <joint name="Joint1" type="revolute">
     <parent link="trunk"/>
@@ -116,8 +130,15 @@
   <joint name="Joint2" type="revolute">
     <parent link="link1"/>
     <child link="link2"/>
-    <axis xyz="0 1 0"/>
+    <axis xyz="1 0 0"/>
     <origin xyz="0 0 0.250" rpy="0 0 0" />
+  </joint>
+
+  <joint name="Joint3" type="revolute">
+    <parent link="trunk"/>
+    <child link="link3"/>
+    <axis xyz="0 -1 0"/>
+    <origin xyz="0 -0.06 0.0" rpy="0 0 0" />
   </joint>
 
 </robot>

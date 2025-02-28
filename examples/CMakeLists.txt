@@ -3,3 +3,4 @@ project(examples LANGUAGES CXX)
 
 add_subdirectory(fixedBase)
 add_subdirectory(floatingBase)
+add_subdirectory(quadruped)
