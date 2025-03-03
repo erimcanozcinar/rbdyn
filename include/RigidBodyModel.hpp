@@ -112,10 +112,9 @@ class RigidBodyModel {
         jointChildIDs.push_back(getLinkID(jointChilds[jointID]));
         
         jointAxes.push_back(jointAxisConvert(joint->FirstChildElement("axis")->Attribute("xyz")));
-
+        
         Eigen::Vector3d pJoint;
         Eigen::Vector3d rJoint;
-        const char* jAxis = joint->FirstChildElement("axis")->Attribute("xyz");
         const char* jPos = joint->FirstChildElement("origin")->Attribute("xyz");
         const char* jRot = joint->FirstChildElement("origin")->Attribute("rpy");
 

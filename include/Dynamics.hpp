@@ -37,7 +37,9 @@ class RigidBodyDynamics{
     std::vector<SpatialInertia, Eigen::aligned_allocator<SpatialInertia>> _Ibody;
     vectorAligned<Mat6> _Ic;
 
-    public:    
+    public: 
+
+    Eigen::VectorXd genForce; 
 
     RigidBodyDynamics(const std::string &urdf_path);
     void init(Vec3 gravity);

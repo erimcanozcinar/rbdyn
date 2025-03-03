@@ -23,6 +23,9 @@ RigidBodyDynamics::RigidBodyDynamics(const std::string &urdf_path) {
         _Ic.push_back(zero66);
     }
     _gravity = Vec6::Zero();
+
+    genForce.resize(_model.nDof);
+    genForce.setZero(); 
 }
 
 void RigidBodyDynamics::init(Vec3 gravity) {
@@ -84,10 +87,7 @@ void RigidBodyDynamics::applyExternalForce(const int bodyId, const Vec3 &pos, co
 
 void RigidBodyDynamics::floatingBaseInvDyn(const ModelState &state, const ModelStateDerivative &dstate) {
     setState(state);
-    setDState(dstate);
-
-    Eigen::VectorXd genForce(_model.nDof);
-    genForce.setZero();
+    setDState(dstate);       
 
     sMat Xfb = sMat::Zero();
     // Xfb << _state.baseR, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), _state.baseR;

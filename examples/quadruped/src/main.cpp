@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     auto ground = world.addGround(0, "steel");
     // ground->setAppearance("hidden");
 
-    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/quadruped/rsc/urdf/tekir3mesh_new_V2copy.urdf");
+    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/quadruped/rsc/urdf/quadruped.urdf");
     /* #endregion */
     
   
@@ -25,6 +25,12 @@ int main(int argc, char** argv) {
     /* #endregion */
 
     /* #region: Create Log file */
+    FILE* Tau_rbdyn;
+    FILE* Tau_rs1;
+    FILE* Tau_rs2;
+    Tau_rbdyn = fopen("/home/erim/rbdyn/examples/quadruped/Log/rbdynLog.txt", "w");
+    Tau_rs1 = fopen("/home/erim/rbdyn/examples/quadruped/Log/rs1Log.txt", "w");
+    Tau_rs2 = fopen("/home/erim/rbdyn/examples/quadruped/Log/rs2Log.txt", "w");
     /* #endregion */
 
     /* #region: Launch raisim server for visualization.Can be visualized on raisimUnity */
@@ -42,6 +48,7 @@ int main(int argc, char** argv) {
 
     // fbDyn.init();
     Dyn.init(world.getGravity().e());
+    std::cout << robot->getBodyIdx("torso") << std::endl;
 
     // Fcon.setZero(); Pcon.setZero();
     for (int loop = 0; loop < 5150; loop++) {
@@ -76,32 +83,27 @@ int main(int argc, char** argv) {
         for (int j=0; j<robot->getDOF()-6; j++) {
             axes[j] = robot->getJointAxis(j+1).e();
         }
-
+            
         torqueFromInverseDynamics.head(3) = robot->getForceAtJointInWorldFrame(0).e();
         torqueFromInverseDynamics.segment<3>(3) = robot->getTorqueAtJointInWorldFrame(0).e();
 
         for (size_t j=1; j<robot->getDOF()-5; j++){
             torqueFromInverseDynamics(j+5) = (robot->getTorqueAtJointInWorldFrame(j).e()).dot(axes[j-1]);
         }
-            
         TauJoint = robot->getMassMatrix().e()*robot->getUdot().e() + robot->getNonlinearities(world.getGravity()).e();
         RSINFO(TauJoint)       
         RSWARN(torqueFromInverseDynamics)
-        // RSINFO(fbDyn.inverseDynamics(robotState, robotDState));
-        // Eigen::VectorXd a = fbDyn.inverseDynamics(robotState, robotDState);
         Dyn.inverseDynamics(robotState, robotDState);
+        jffTorques = Dyn.genForce;
+        
         /* #endregion */
 
         /* #region: PD control */
         if(t>=5)
-            // refQ << 10*M_PI/180, 30*M_PI/180, -60*M_PI/180,
-            //         -10*M_PI/180, -30*M_PI/180, 60*M_PI/180,
-            //         -10*M_PI/180, 30*M_PI/180, -60*M_PI/180,
-            //         10*M_PI/180, -30*M_PI/180, 60*M_PI/180;
             refQ << 10*M_PI/180, 30*M_PI/180, -60*M_PI/180,
-                    0*M_PI/180, 0*M_PI/180, 0*M_PI/180,
-                    0*M_PI/180, 0*M_PI/180, 0*M_PI/180,
-                    0*M_PI/180, 0*M_PI/180, 0*M_PI/180;
+                    -10*M_PI/180, -30*M_PI/180, 60*M_PI/180,
+                    -10*M_PI/180, 30*M_PI/180, -60*M_PI/180,
+                    10*M_PI/180, -30*M_PI/180, 60*M_PI/180;
         else
             refQ.setZero();
 
@@ -113,12 +115,17 @@ int main(int argc, char** argv) {
         F << 0, 0, 0, 0, 0, 0, Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(12)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(12));
         robot->setGeneralizedForce(F);
         /* #endregion */
-        // Dyn.applyExternalForce(2, Vec3(0,0,0.25), Vec6(0,0,0,10,0,0));
-        // robot->setExternalForce(robot->getBodyIdx("link2"),{0,0,0.25},{10,0,0});
+        Dyn.applyExternalForce(robot->getBodyIdx("torso"), Vec3(0,0,0), Vec6(0,0,0,10,0,0));
+        robot->setExternalForce(robot->getBodyIdx("torso"),{0,0,0},{10,0,0});
 
         server.integrateWorldThreadSafe();
 
-        // fprintf(fp0, "%f %f %f %f\n", t, jffTorques(0), torqueFromInverseDynamics(6), TauJoint(6));   
+        
+        
+
+        fprintf(Tau_rbdyn, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", t, jffTorques(0), jffTorques(1), jffTorques(2), jffTorques(3), jffTorques(4), jffTorques(5), jffTorques(6), jffTorques(7), jffTorques(8), jffTorques(9), jffTorques(10), jffTorques(11), jffTorques(12), jffTorques(13), jffTorques(14), jffTorques(15), jffTorques(16), jffTorques(17));   
+        fprintf(Tau_rs1, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", t, torqueFromInverseDynamics(0), torqueFromInverseDynamics(1), torqueFromInverseDynamics(2), torqueFromInverseDynamics(3), torqueFromInverseDynamics(4), torqueFromInverseDynamics(5), torqueFromInverseDynamics(6), torqueFromInverseDynamics(7), torqueFromInverseDynamics(8), torqueFromInverseDynamics(9), torqueFromInverseDynamics(10), torqueFromInverseDynamics(11), torqueFromInverseDynamics(12), torqueFromInverseDynamics(13), torqueFromInverseDynamics(14), torqueFromInverseDynamics(15), torqueFromInverseDynamics(16), torqueFromInverseDynamics(17));   
+        fprintf(Tau_rs2, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", t, TauJoint(0), TauJoint(1), TauJoint(2), TauJoint(3), TauJoint(4), TauJoint(5), TauJoint(6), TauJoint(7), TauJoint(8), TauJoint(9), TauJoint(10), TauJoint(11), TauJoint(12), TauJoint(13), TauJoint(14), TauJoint(15), TauJoint(16), TauJoint(17));   
     }
     server.killServer();
     std::cout << "end of simulation" << std::endl;
