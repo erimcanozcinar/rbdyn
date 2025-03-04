@@ -343,6 +343,7 @@ class RigidBodyModel {
     std::vector<JointType> jointTypes;
     std::vector<CoordinateAxis> jointAxes;
     std::vector<int> parents;
+    std::vector<std::vector<int>> supports;
     std::vector<SpatialInertia, Eigen::aligned_allocator<SpatialInertia>> Ibody;
 
     int getLinkID(const std::string& name) {
@@ -379,9 +380,22 @@ class RigidBodyModel {
             SpatialInertia bodyInertia(linkMasses[i], linkCOMs[i], linkInertias[i]);
             parents.push_back(jointParentIDs[i]);
             Ibody.push_back(bodyInertia);
+
+            std::vector<int> v;
+            for(int body = i; parents[body] >= 0; body--) {
+                v.push_back(jointIDs[body]);
+                if(parents[i] == 0)
+                    break;
+            }
+            supports.push_back(v);
+            for(int idx = 0; idx < v.size(); idx++) {
+                std::cout << supports[i][idx] << std::endl;
+            }
+            std::cout << "  " << std::endl;
         }
-        printURDFInfo();
-        printModelInfo();
+        
+        // printURDFInfo();
+        // printModelInfo();
 
     }
 
