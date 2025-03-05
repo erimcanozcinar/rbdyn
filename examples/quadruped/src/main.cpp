@@ -46,8 +46,7 @@ int main(int argc, char** argv) {
     std::vector<Eigen::Vector3d> axes(robot->getDOF());
     torqueFromInverseDynamics.setZero();
 
-    // fbDyn.init();
-    Dyn.init(world.getGravity().e());
+    
     std::cout << robot->getBodyIdx("torso") << std::endl;
 
     // Fcon.setZero(); Pcon.setZero();
@@ -93,8 +92,8 @@ int main(int argc, char** argv) {
         TauJoint = robot->getMassMatrix().e()*robot->getUdot().e() + robot->getNonlinearities(world.getGravity()).e();
         RSINFO(TauJoint)       
         RSWARN(torqueFromInverseDynamics)
-        Dyn.inverseDynamics(robotState, robotDState);
-        jffTorques = Dyn.genForce;
+        robotModel.inverseDynamics(robotState, robotDState);
+        jffTorques = robotModel.genForce;
         
         /* #endregion */
 
@@ -115,7 +114,7 @@ int main(int argc, char** argv) {
         F << 0, 0, 0, 0, 0, 0, Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(12)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(12));
         robot->setGeneralizedForce(F);
         /* #endregion */
-        Dyn.applyExternalForce(robot->getBodyIdx("torso"), Vec3(0,0,0), Vec6(0,0,0,10,0,0));
+        robotModel.applyExternalForce(robot->getBodyIdx("torso"), Vec3(0,0,0), Vec6(0,0,0,10,0,0));
         robot->setExternalForce(robot->getBodyIdx("torso"),{0,0,0},{10,0,0});
 
         server.integrateWorldThreadSafe();

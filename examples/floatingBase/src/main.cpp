@@ -40,9 +40,6 @@ int main(int argc, char** argv) {
     std::vector<Eigen::Vector3d> axes(robot->getDOF());
     torqueFromInverseDynamics.setZero();
 
-    // fbDyn.init();
-    Dyn.init(world.getGravity().e());
-
     // Fcon.setZero(); Pcon.setZero();
     for (int loop = 0; loop < 5150; loop++) {
         RS_TIMED_LOOP(int(world.getTimeStep()*1e6));
@@ -91,7 +88,7 @@ int main(int argc, char** argv) {
         RSWARN(torqueFromInverseDynamics)
         // RSINFO(fbDyn.inverseDynamics(robotState, robotDState));
         // Eigen::VectorXd a = fbDyn.inverseDynamics(robotState, robotDState);
-        Dyn.inverseDynamics(robotState, robotDState);
+        robotModel.inverseDynamics(robotState, robotDState);
         /* #endregion */
 
         /* #region: PD control */

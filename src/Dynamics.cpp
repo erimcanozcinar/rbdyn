@@ -1,13 +1,16 @@
 #include "Dynamics.hpp"
 
-RigidBodyDynamics::RigidBodyDynamics(const std::string &urdf_path) {
-    _model.createModel(urdf_path);
+RigidBodyDynamics::RigidBodyDynamics() {
+    
+}
+
+void RigidBodyDynamics::initDynamics() {
     Mat6 eye6 = Mat6::Identity();
     Vec6 zero6 = Vec6::Zero();
     Mat6 zero66 = Mat6::Zero();
 
     SpatialInertia zeroInertia(zero66);
-    for(int i = 0; i < _model.nBody; i++) {
+    for(int i = 0; i < nBody; i++) {
         _v.push_back(zero6);
         _a.push_back(zero6);
         _a0.push_back(zero6);
@@ -22,29 +25,9 @@ RigidBodyDynamics::RigidBodyDynamics(const std::string &urdf_path) {
         _X0.push_back(eye6);
         _Ic.push_back(zero66);
     }
-    _gravity = Vec6::Zero();
 
-    genForce.resize(_model.nDof);
+    genForce.resize(nDof);
     genForce.setZero(); 
-}
-
-void RigidBodyDynamics::init(Vec3 gravity) {
-    _parents = _model.parents;
-    _Xtree = _model.Xtree;
-    _jointTypes = _model.jointTypes;
-    _jointAxes = _model.jointAxes; 
-    _Ibody = _model.Ibody;
-    _gravity.template tail<3>() = gravity;
-}
-
-JointType RigidBodyDynamics::getJointType(const std::string name) {
-    int jID = _model.getJointID(name);
-    return _jointTypes[jID];
-}
-
-CoordinateAxis RigidBodyDynamics::getJointAxis(const std::string name) {
-    int jID = _model.getJointID(name);
-    return _jointAxes[jID];
 }
 
 void RigidBodyDynamics::setState(const ModelState& dstate) {
@@ -96,7 +79,7 @@ void RigidBodyDynamics::floatingBaseInvDyn(const ModelState &state, const ModelS
     _v[0] = _Xup[0]*_state.baseVelocity;
     _ar[0] = -_gravity;
 
-    for(int i = 1; i < _model.nBody; i++) {
+    for(int i = 1; i < nBody; i++) {
         Vec6 vJ = Vec6::Zero();
         sMat Xj = sMat::Zero();
         Xj = jointSpatialTransform(_jointTypes[i], _jointAxes[i], _state.q[i-1]);
@@ -113,14 +96,14 @@ void RigidBodyDynamics::floatingBaseInvDyn(const ModelState &state, const ModelS
     
     _Ic[0] = _Ibody[0].getMatrix();
     _pc[0] = _Ibody[0].getMatrix()*_ar[0] + crf(_v[0])*_Ibody[0].getMatrix()*_v[0] - _fext[0];
-    for(int i = _model.nBody-1; i>0; i--) {
+    for(int i = nBody-1; i>0; i--) {
         _Ic[_parents[i]] = _Ic[_parents[i]] + _Xup[i].transpose()*_Ic[i]*_Xup[i];
         _pc[_parents[i]] = _pc[_parents[i]] + _Xup[i].transpose()*_pc[i];
     }
 
     _a0[0] = -_Ic[0].inverse()*_pc[0];
     genForce.template head<6>() = _Ic[0]*_a0[0] + _pc[0];
-    for(int i = 1; i < _model.nBody; i++) {
+    for(int i = 1; i < nBody; i++) {
         _a0[i] = _Xup[i]*_a0[_parents[i]];
         genForce(i+5) = _S[i].transpose()*(_Ic[i]*_a0[i] + _pc[i]); 
     }       
@@ -131,9 +114,6 @@ void RigidBodyDynamics::floatingBaseInvDyn(const ModelState &state, const ModelS
 void RigidBodyDynamics::fixedBaseInvDyn(const ModelState &state, const ModelStateDerivative &dstate) {
     setState(state);
     setDState(dstate);
-
-    Eigen::VectorXd genForce(_model.nDof);
-
     sMat Xj = sMat::Zero();
     Xj = jointSpatialTransform(_jointTypes[0], _jointAxes[0], 0);
     _Xup[0] = Xj*_Xtree[0];
@@ -145,7 +125,7 @@ void RigidBodyDynamics::fixedBaseInvDyn(const ModelState &state, const ModelStat
     _a[0] = -_gravity;
     _f[0] = _Ibody[0].getMatrix() * _a[0] + crf(_v[0])*_Ibody[0].getMatrix()*_v[0] - _fext[0];
 
-    for(int i = 1; i < _model.nBody; i++) {
+    for(int i = 1; i < nBody; i++) {
         Xj = sMat::Zero();
         Xj = jointSpatialTransform(_jointTypes[i], _jointAxes[i], _state.q[i-1]);
         _Xup[i] = Xj*_Xtree[i];
@@ -157,16 +137,12 @@ void RigidBodyDynamics::fixedBaseInvDyn(const ModelState &state, const ModelStat
         _f[i] = _Ibody[i].getMatrix() * _a[i] + crf(_v[i])*_Ibody[i].getMatrix()*_v[i] - _fext[i];
     }
 
-    for(int i=_model.nBody-1; i>0; i--) {
+    for(int i=nBody-1; i>0; i--) {
         genForce[i-1] = _S[i].dot(_f[i]);
         if(_parents[i] != 0) {
             _f[_parents[i]] = _f[_parents[i]] + _Xup[i].transpose()*_f[i];
         }
     }
-    // for(int i=0; i<_model.nBody; i++){
-    //     std::cout << _Xup[i] << std::endl;
-    //     std::cout << "----------" << std::endl;
-    // }
         
     std::cout << genForce << std::endl;
 }

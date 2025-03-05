@@ -40,8 +40,6 @@ int main(int argc, char** argv) {
     std::vector<Eigen::Vector3d> axes(robot->getDOF());
     torqueFromInverseDynamics.setZero();
 
-    // fixDyn.init();
-    Dyn.init(world.getGravity().e());
     
     while (1) {
         RS_TIMED_LOOP(int(world.getTimeStep()*1e6));
@@ -92,7 +90,7 @@ int main(int argc, char** argv) {
         TauJoint = robot->getMassMatrix().e()*robot->getUdot().e() + robot->getNonlinearities(world.getGravity()).e();
         // RSWARN(TauJoint)       
         RSWARN(torqueFromInverseDynamics)
-        Dyn.inverseDynamics(robotState, robotDState);
+        robotModel.inverseDynamics(robotState, robotDState);
         // Eigen::VectorXd a = fixDyn.inverseDynamics(robotState, robotDState);
         /* #endregion */
 
@@ -110,11 +108,11 @@ int main(int argc, char** argv) {
         F <<  Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(4)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(4));
         robot->setGeneralizedForce(F);
         /* #endregion */
-        // Dyn.applyExternalForce(2, Vec3(0.01,0,0.25), Vec6(0,0,0,Fcon(0),Fcon(1),Fcon(2)));
-        // Dyn.applyExternalForce(1, Vec3(0,0,0.125), Vec6(0,0,0,10,0,0));
-        // robot->setExternalForce(robot->getBodyIdx("link1"),{10,0,0});
+        // robotModel.applyExternalForce(2, Vec3(0.01,0,0.25), Vec6(0,0,0,Fcon(0),Fcon(1),Fcon(2)));
+        robotModel.applyExternalForce(1, Vec3(0,0,0.125), Vec6(0,0,0,10,0,0));
+        robot->setExternalForce(robot->getBodyIdx("link1"),{10,0,0});
         // robot->setExternalTorque(robot->getBodyIdx("link2"), {10,0,0});
-                 
+        
         server.integrateWorldThreadSafe();
 
         // fprintf(fp0, "%f %f %f %f\n", t, jffTorques(0), torqueFromInverseDynamics(6), TauJoint(6));   

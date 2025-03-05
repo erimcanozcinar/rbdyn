@@ -1,7 +1,7 @@
 #ifndef RIGIDBODYDYNAMICS_HPP
 #define RIGIDBODYDYNAMICS_HPP
 
-#include "RigidBodyModel.hpp"
+#include "modelParameters.hpp"
 
 struct ModelState {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
@@ -20,31 +20,19 @@ struct ModelStateDerivative {
     Eigen::Matrix<double, -1, 1> ddq;
 };
 
-class RigidBodyDynamics{
+class RigidBodyDynamics : public virtual ModelParameters {
     private:
-    RigidBodyModel _model;
-    Vec6 _gravity;
-
-    std::vector<JointType> _jointTypes;
-    std::vector<CoordinateAxis> _jointAxes;
     ModelState _state;
     ModelStateDerivative _dstate;
     vectorAligned<sMat> _Xup, _Xa, _X0;
-    std::vector<sMat, Eigen::aligned_allocator<sMat>> _Xtree;
     vectorAligned<Vec6> _S, _v, _a, _ar, _a0, _c, _f, _fext, _p, _pc;
-    std::vector<int> _parents;
-
-    std::vector<SpatialInertia, Eigen::aligned_allocator<SpatialInertia>> _Ibody;
     vectorAligned<Mat6> _Ic;
-
     public: 
 
     Eigen::VectorXd genForce; 
 
-    RigidBodyDynamics(const std::string &urdf_path);
-    void init(Vec3 gravity);
-    JointType getJointType(const std::string name);
-    CoordinateAxis getJointAxis(const std::string name);
+    RigidBodyDynamics();
+    void initDynamics();
     void setState(const ModelState& dstate);
     void setDState(const ModelStateDerivative& dstate);
     void applyExternalForce(const int bodyId, const Vec3 &pos, const Vec6 &fext);

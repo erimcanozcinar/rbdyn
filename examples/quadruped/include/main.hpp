@@ -9,11 +9,11 @@
 #include <cstdlib>
 #include "Eigen/Dense"
 #include <filesystem>
-#include "Dynamics.hpp"
+#include "RigidBodyModel.hpp"
 
 ModelState robotState;
 ModelStateDerivative robotDState;
-RigidBodyDynamics Dyn("/home/erim/rbdyn/examples/quadruped/rsc/urdf/quadruped.urdf");
+RigidBodyModel robotModel("/home/erim/rbdyn/examples/quadruped/rsc/urdf/quadruped.urdf");
 
 double t, dt;
 Eigen::VectorXd genCoordinates(19), genVelocity(18), F(18), quat(4); 
