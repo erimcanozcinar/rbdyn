@@ -5,8 +5,9 @@
 #include <iostream>
 #include <fstream>
 #include "Dynamics.hpp"
+#include "Kinematics.hpp"
 
-class RigidBodyModel : public RigidBodyDynamics {    
+class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {    
     private:    
     bool isFixedBase = false;
     int linkID = -1;
@@ -94,8 +95,8 @@ class RigidBodyModel : public RigidBodyDynamics {
 
         _jointParents.push_back(std::string(joint->FirstChildElement("parent")->Attribute("link")));
         _jointChilds.push_back(std::string(joint->FirstChildElement("child")->Attribute("link")));
-        _jointParentIDs.push_back(getLinkID(_jointParents[jointID]));        
-        _jointChildIDs.push_back(getLinkID(_jointChilds[jointID]));
+        _jointParentIDs.push_back(getBodyID(_jointParents[jointID]));        
+        _jointChildIDs.push_back(getBodyID(_jointChilds[jointID]));
         
         _jointAxes.push_back(jointAxisConvert(joint->FirstChildElement("axis")->Attribute("xyz")));
         
@@ -170,7 +171,7 @@ class RigidBodyModel : public RigidBodyDynamics {
             _jointParents.insert(_jointParents.begin(), "world");
             _jointChilds.insert(_jointChilds.begin(), _linkNames[0]);
             _jointParentIDs.insert(_jointParentIDs.begin(), -1);        
-            _jointChildIDs.insert(_jointChildIDs.begin(), getLinkID(_linkNames[0]));
+            _jointChildIDs.insert(_jointChildIDs.begin(), getBodyID(_linkNames[0]));
             _jointAxes.insert(_jointAxes.begin(), CoordinateAxis::None);
             _jointLocations.insert(_jointLocations.begin(), Eigen::Vector3d::Zero());
             _jointRotations.insert(_jointRotations.begin(), Eigen::Vector3d::Zero());
@@ -181,7 +182,7 @@ class RigidBodyModel : public RigidBodyDynamics {
             _jointParents.insert(_jointParents.begin(), "world");
             _jointChilds.insert(_jointChilds.begin(), std::string(baseChild));
             _jointParentIDs.insert(_jointParentIDs.begin(), -1);        
-            _jointChildIDs.insert(_jointChildIDs.begin(), getLinkID(std::string(baseChild)));
+            _jointChildIDs.insert(_jointChildIDs.begin(), getBodyID(std::string(baseChild)));
             _jointAxes.insert(_jointAxes.begin(), CoordinateAxis::None);
 
             const char* baseJointPos = robot->FirstChildElement("joint")->FirstChildElement("origin")->Attribute("xyz");
@@ -345,9 +346,10 @@ class RigidBodyModel : public RigidBodyDynamics {
     RigidBodyModel(const std::string& urdf_file_path) {
         createModel(urdf_file_path);
         initDynamics();
+        initKinematics();
     }
 
-    int getLinkID(const std::string& name) {
+    int getBodyID(const std::string& name) {
         auto it = std::find(_linkNames.begin(), _linkNames.end(), name);
         
         if (it != _linkNames.end()) {

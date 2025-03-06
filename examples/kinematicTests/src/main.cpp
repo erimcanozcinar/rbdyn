@@ -13,12 +13,12 @@ int main(int argc, char** argv) {
     auto ground = world.addGround(0, "steel");
     // ground->setAppearance("hidden");
 
-    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/fixedBase/rsc/1dof2.urdf");
+    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/kinematicTests/rsc/1dof.urdf");
     /* #endregion */
     
   
     /* #region: Initialize Robot */
-    genCoordinates << 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180; 
+    genCoordinates << 0*M_PI/180, 0*M_PI/180; 
     genVelocity << 0, 0, 0, 0;
     robot->setGeneralizedCoordinate(genCoordinates);
     robot->setGeneralizedVelocity(genVelocity);
@@ -71,11 +71,10 @@ int main(int argc, char** argv) {
         robotDState.dBaseVelocity << Vec6::Zero();
         robotDState.ddq = robot->getGeneralizedAcceleration().e();
 
-        /* #region: Newton-Euler */
-        // quat << robot->getGeneralizedCoordinate().e().segment(3,4);
-        // Eigen::Quaterniond Quat(quat(0),quat(1),quat(2),quat(3));
-        // jffTorques = funcNewtonEuler(robot->getGeneralizedCoordinate().e().head(3),robot->getGeneralizedAcceleration().e().head(3),quat2Rotmat2(Quat),robot->getGeneralizedVelocity().e().segment(3,3), robot->getGeneralizedAcceleration().e().segment(3,3), robot->getGeneralizedCoordinate().e().tail(1), robot->getGeneralizedVelocity().e().tail(1), robot->getGeneralizedAcceleration().e().tail(1),0*Fcon, 0*Pcon);
+        /* #region: Kinematis */
+        robotModel.forwardKinematics(robotState);
         /* #endregion */
+     
 
         /* #region: RaiSim Inverse Dynamics */
         for (int j=0; j<robot->getDOF(); j++) {
@@ -89,33 +88,31 @@ int main(int argc, char** argv) {
             
         TauJoint = robot->getMassMatrix().e()*robot->getUdot().e() + robot->getNonlinearities(world.getGravity()).e();
         // RSWARN(TauJoint)       
-        RSWARN(torqueFromInverseDynamics)
-        robotModel.inverseDynamics(robotState, robotDState);
-        // Eigen::VectorXd a = fixDyn.inverseDynamics(robotState, robotDState);
+        // RSWARN(torqueFromInverseDynamics)
+        // robotModel.inverseDynamics(robotState, robotDState);
         /* #endregion */
 
         /* #region: PD control */
         if(t>=5)
-            refQ << 10*M_PI/180, -10*M_PI/180, 10*M_PI/180, 10*M_PI/180;
+            refQ << 10*M_PI/180, -10*M_PI/180;
         else
-            refQ << 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180;
+            refQ << 0*M_PI/180, 0*M_PI/180;
 
-        refdQ << 0, 0, 0, 0;
-        Eigen::Matrix4d Kp, Kd;
+        refdQ << 0, 0;
+        Eigen::Matrix2d Kp, Kd;
         Kp.setIdentity(); Kd.setIdentity();
         Kp = 50*Kp;
         Kd = 3*Kd;
-        F <<  Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(4)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(4));
+        F <<  Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(2)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(2));
         robot->setGeneralizedForce(F);
         /* #endregion */
         // robotModel.applyExternalForce(2, Vec3(0.01,0,0.25), Vec6(0,0,0,Fcon(0),Fcon(1),Fcon(2)));
-        robotModel.applyExternalForce(robotModel.getBodyID("link1"), Vec3(0,0,0.125), Vec6(0,0,0,10,0,0));
-        robot->setExternalForce(robot->getBodyIdx("link1"),{10,0,0});
+        // robotModel.applyExternalForce(robotModel.getBodyID("link1"), Vec3(0,0,0.125), Vec6(0,0,0,10,0,0));
+        // robot->setExternalForce(robot->getBodyIdx("link1"),{10,0,0});
         // robot->setExternalTorque(robot->getBodyIdx("link2"), {10,0,0});
 
         server.integrateWorldThreadSafe();
 
-        // fprintf(fp0, "%f %f %f %f\n", t, jffTorques(0), torqueFromInverseDynamics(6), TauJoint(6));   
     }
     server.killServer();
     std::cout << "end of simulation" << std::endl;

@@ -4,6 +4,23 @@
 #include "SpatialInertia.hpp"
 using namespace spatial;
 
+struct ModelState {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    Eigen::Vector3d basePosition;
+    Eigen::Quaterniond baseOrientation;
+    RotMat baseR;
+    Vec6 baseVelocity;  // body coordinates
+    Eigen::Matrix<double, -1, 1> q;
+    Eigen::Matrix<double, -1, 1>  dq;
+};
+
+struct ModelStateDerivative {
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    Eigen::Vector3d dBasePosition;
+    Vec6 dBaseVelocity;
+    Eigen::Matrix<double, -1, 1> ddq;
+};
+
 struct ModelParameters {
     protected:
     int nBody;

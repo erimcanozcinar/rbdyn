@@ -30,8 +30,8 @@ void RigidBodyDynamics::initDynamics() {
     genForce.setZero(); 
 }
 
-void RigidBodyDynamics::setState(const ModelState& dstate) {
-    _state = dstate;
+void RigidBodyDynamics::setState(const ModelState& state) {
+    _state = state;
 }
 
 void RigidBodyDynamics::setDState(const ModelStateDerivative& dstate) {
@@ -68,9 +68,8 @@ void RigidBodyDynamics::applyExternalForce(const int bodyId, const Vec3 &pos, co
 //     _fext[bodyId] = (X.transpose()).inverse()*fext;
 // }
 
-void RigidBodyDynamics::floatingBaseInvDyn(const ModelState &state, const ModelStateDerivative &dstate) {
-    setState(state);
-    setDState(dstate);       
+void RigidBodyDynamics::floatingBaseInvDyn() {
+          
 
     sMat Xfb = sMat::Zero();
     // Xfb << _state.baseR, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), _state.baseR;
@@ -111,9 +110,7 @@ void RigidBodyDynamics::floatingBaseInvDyn(const ModelState &state, const ModelS
     std::cout << genForce << std::endl;
 }
 
-void RigidBodyDynamics::fixedBaseInvDyn(const ModelState &state, const ModelStateDerivative &dstate) {
-    setState(state);
-    setDState(dstate);
+void RigidBodyDynamics::fixedBaseInvDyn() {
     sMat Xj = sMat::Zero();
     Xj = jointSpatialTransform(_jointTypes[0], _jointAxes[0], 0);
     _Xup[0] = Xj*_Xtree[0];
@@ -148,10 +145,12 @@ void RigidBodyDynamics::fixedBaseInvDyn(const ModelState &state, const ModelStat
 }
 
 void RigidBodyDynamics::inverseDynamics(const ModelState &state, const ModelStateDerivative &dstate) {
+    setState(state);
+    setDState(dstate); 
     if(_jointTypes[0] == JointType::Floating) {
-        floatingBaseInvDyn(state, dstate);
+        floatingBaseInvDyn();
     } else if(_jointTypes[0] == JointType::Fixed) {
-        fixedBaseInvDyn(state, dstate);
+        fixedBaseInvDyn();
     } else {
         std::cout << "Unknown base, inverse Dynamics can not be solved" << std::endl;
     }
