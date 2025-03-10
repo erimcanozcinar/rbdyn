@@ -16,7 +16,7 @@ class RigidBodyKinematics : public virtual ModelParameters{
     public:
 
     void initKinematics();
-    void forwardKinematics(const int& bodyID, const ModelState& state);
+    Vec3 forwardKinematics(const int& bodyId, const ModelState& state, const Vec3& pos);
 
 };
 

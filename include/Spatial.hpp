@@ -21,6 +21,8 @@ sMat spatialTransform(const RotMat& E, const Vec3& r);
 
 tMat plücker2Homogeneous(const sMat& X);
 
+tMat homogeneousTransform(const RotMat& R, const Vec3& r);
+
 /* Constructs a Plücker coordinate transformation matrix for specific joint type */
 sMat jointSpatialTransform(JointType joint, CoordinateAxis axis, double q);
 

@@ -55,6 +55,13 @@ tMat plücker2Homogeneous(const sMat& X) {
     return T;
 }
 
+tMat homogeneousTransform(const RotMat& R, const Vec3& r) {
+    tMat T = tMat::Identity();
+    T.template topLeftCorner<3,3>() = R;
+    T.template topRightCorner<3,1>() = r;
+    return T;
+}
+
 /* Constructs a Plücker coordinate transformation matrix for specific joint type */
 sMat jointSpatialTransform(JointType joint, CoordinateAxis axis, double q) {
     sMat X = sMat::Zero();
