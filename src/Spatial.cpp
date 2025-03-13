@@ -42,6 +42,27 @@ sMat spatialTransform(const RotMat& E, const Vec3& r) {
     return X;
 }
 
+RotMat rotationFromX(const sMat& X) {
+    RotMat E = X.template topLeftCorner<3,3>();
+    return E;
+}
+
+Vec3 translationFromX(const sMat& X) {
+    RotMat E = rotationFromX(X);
+    Vec3 r = -skewMatToVector(E.transpose()*X.template bottomLeftCorner<3, 3>());
+    return r;
+}
+
+sMat invertX(const sMat& X) {
+    RotMat E = rotationFromX(X);
+    Vec3 r = -skewMatToVector(E.transpose()*X.template bottomLeftCorner<3, 3>());
+    sMat X_inv = sMat::Zero();
+    X_inv.template topLeftCorner<3, 3>() = E.transpose();
+    X_inv.template bottomRightCorner<3, 3>() = E.transpose();
+    X_inv.template bottomLeftCorner<3, 3>() = vectorToSkewMat(r)*E.transpose();
+    return X_inv;
+}
+
 tMat plücker2Homogeneous(const sMat& X) {
     RotMat E = X.topLeftCorner<3, 3>();
     RotMat R = E.transpose();

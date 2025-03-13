@@ -72,7 +72,8 @@ int main(int argc, char** argv) {
         robotDState.ddq = robot->getGeneralizedAcceleration().e();
 
         /* #region: Kinematis */
-        robotModel.forwardKinematics(robotModel.getBodyID("link2"),robotState, Vec3(0,0,0.25));
+        robotModel.homogenousFK(robotModel.getBodyID("link1"),robotState, Vec3(0,0,0.25));
+        RSWARN(robotModel.forwardKinematics(robotModel.getBodyID("link1"),robotState, Vec3(0,0,0.25)));
         /* #endregion */
      
 

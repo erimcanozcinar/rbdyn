@@ -19,6 +19,12 @@ sMat spatialTranslation(const Vec3 &r);
 /* Constructs a Plücker coordinate transformation matrix (6x6) */
 sMat spatialTransform(const RotMat& E, const Vec3& r);
 
+RotMat rotationFromX(const sMat& X);
+
+Vec3 translationFromX(const sMat& X);
+
+sMat invertX(const sMat& X);
+
 tMat plücker2Homogeneous(const sMat& X);
 
 tMat homogeneousTransform(const RotMat& R, const Vec3& r);
