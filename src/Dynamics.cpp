@@ -4,13 +4,14 @@ RigidBodyDynamics::RigidBodyDynamics() {
     
 }
 
-void RigidBodyDynamics::initDynamics() {
+void RigidBodyDynamics::initDynamics(ModelParameters urdf) {
+    model = urdf;
     Mat6 eye6 = Mat6::Identity();
     Vec6 zero6 = Vec6::Zero();
     Mat6 zero66 = Mat6::Zero();
 
     SpatialInertia zeroInertia(zero66);
-    for(int i = 0; i < nBody; i++) {
+    for(int i = 0; i < model.nBody; i++) {
         _v.push_back(zero6);
         _a.push_back(zero6);
         _a0.push_back(zero6);
@@ -25,9 +26,11 @@ void RigidBodyDynamics::initDynamics() {
         _X0.push_back(eye6);
         _Ic.push_back(zero66);
     }
-
-    genForce.resize(nDof);
+    
+    genForce.resize(model.nBody);
+    jointTorques.resize(model.nDof);
     genForce.setZero(); 
+    jointTorques.setZero(); 
 }
 
 void RigidBodyDynamics::setState(const ModelState& state) {
@@ -36,6 +39,15 @@ void RigidBodyDynamics::setState(const ModelState& state) {
 
 void RigidBodyDynamics::setDState(const ModelStateDerivative& dstate) {
     _dstate = dstate;
+}
+
+void RigidBodyDynamics::setJointAngles(int i, int &jIndex) {
+    if(model._jointTypes[i] != JointType::Fixed) {
+        model._q[i] = _state.q[jIndex];
+        model._dq[i] = _state.dq[jIndex];
+        model._ddq[i] = _dstate.ddq[jIndex];
+        jIndex++;
+    }    
 }
 
 /** Apply external torque and force on body in world frame.
@@ -76,34 +88,34 @@ void RigidBodyDynamics::floatingBaseInvDyn() {
     _Xup[0] = spatialTransform(_state.baseR, _state.basePosition);
     _X0[0] = _Xup[0];
     _v[0] = _Xup[0]*_state.baseVelocity;
-    _ar[0] = -_gravity;
+    _ar[0] = -model._gravity;
 
-    for(int i = 1; i < nBody; i++) {
+    for(int i = 1; i < model.nBody; i++) {
         Vec6 vJ = Vec6::Zero();
         sMat Xj = sMat::Zero();
-        Xj = jointSpatialTransform(_jointTypes[i], _jointAxes[i], _state.q[i-1]);
-        _Xup[i] = Xj*_Xtree[i];
-        _X0[i] = _Xup[i]*_X0[_parents[i]];
-        _S[i] = jointMotionSubspace(_jointTypes[i], _jointAxes[i]);
+        Xj = jointSpatialTransform(model._jointTypes[i], model._jointAxes[i], _state.q[i-1]);
+        _Xup[i] = Xj*model._Xtree[i];
+        _X0[i] = _Xup[i]*_X0[model._parents[i]];
+        _S[i] = jointMotionSubspace(model._jointTypes[i], model._jointAxes[i]);
         vJ = _S[i]*_state.dq[i-1];
-        _v[i] = _Xup[i]*_v[_parents[i]] + vJ;
+        _v[i] = _Xup[i]*_v[model._parents[i]] + vJ;
 
-        _ar[i] = _Xup[i] * _ar[_parents[i]] + crm(_v[i])*vJ + _S[i] * _dstate.ddq[i-1];
-        _Ic[i] = _Ibody[i].getMatrix();
-        _pc[i] = _Ibody[i].getMatrix() * _ar[i] + crf(_v[i])*_Ibody[i].getMatrix()*_v[i] - _fext[i];
+        _ar[i] = _Xup[i] * _ar[model._parents[i]] + crm(_v[i])*vJ + _S[i] * _dstate.ddq[i-1];
+        _Ic[i] = model._Ibody[i].getMatrix();
+        _pc[i] = model._Ibody[i].getMatrix() * _ar[i] + crf(_v[i])*model._Ibody[i].getMatrix()*_v[i] - _fext[i];
     }
     
-    _Ic[0] = _Ibody[0].getMatrix();
-    _pc[0] = _Ibody[0].getMatrix()*_ar[0] + crf(_v[0])*_Ibody[0].getMatrix()*_v[0] - _fext[0];
-    for(int i = nBody-1; i>0; i--) {
-        _Ic[_parents[i]] = _Ic[_parents[i]] + _Xup[i].transpose()*_Ic[i]*_Xup[i];
-        _pc[_parents[i]] = _pc[_parents[i]] + _Xup[i].transpose()*_pc[i];
+    _Ic[0] = model._Ibody[0].getMatrix();
+    _pc[0] = model._Ibody[0].getMatrix()*_ar[0] + crf(_v[0])*model._Ibody[0].getMatrix()*_v[0] - _fext[0];
+    for(int i = model.nBody-1; i>0; i--) {
+        _Ic[model._parents[i]] = _Ic[model._parents[i]] + _Xup[i].transpose()*_Ic[i]*_Xup[i];
+        _pc[model._parents[i]] = _pc[model._parents[i]] + _Xup[i].transpose()*_pc[i];
     }
 
     _a0[0] = -_Ic[0].inverse()*_pc[0];
     genForce.template head<6>() = _Ic[0]*_a0[0] + _pc[0];
-    for(int i = 1; i < nBody; i++) {
-        _a0[i] = _Xup[i]*_a0[_parents[i]];
+    for(int i = 1; i < model.nBody; i++) {
+        _a0[i] = _Xup[i]*_a0[model._parents[i]];
         genForce(i+5) = _S[i].transpose()*(_Ic[i]*_a0[i] + _pc[i]); 
     }       
     
@@ -112,32 +124,34 @@ void RigidBodyDynamics::floatingBaseInvDyn() {
 
 void RigidBodyDynamics::fixedBaseInvDyn() {
     sMat Xj = sMat::Zero();
-    Xj = jointSpatialTransform(_jointTypes[0], _jointAxes[0], 0);
-    _Xup[0] = Xj*_Xtree[0];
+    Xj = jointSpatialTransform(model._jointTypes[0], model._jointAxes[0], 0);
+    _Xup[0] = Xj*model._Xtree[0];
     _X0[0] = _Xup[0];
-    _S[0] = jointMotionSubspace(_jointTypes[0], _jointAxes[0]);
+    _S[0] = jointMotionSubspace(model._jointTypes[0], model._jointAxes[0]);
     Vec6 vJ = _S[0]*0;
     _v[0] = Vec6::Zero();
     _c[0] = Vec6::Zero();
-    _a[0] = -_gravity;
-    _f[0] = _Ibody[0].getMatrix() * _a[0] + crf(_v[0])*_Ibody[0].getMatrix()*_v[0] - _fext[0];
+    _a[0] = -model._gravity;
+    _f[0] = model._Ibody[0].getMatrix() * _a[0] + crf(_v[0])*model._Ibody[0].getMatrix()*_v[0] - _fext[0];
 
-    for(int i = 1; i < nBody; i++) {
+    int jIndex = 0;
+    for(int i = 1; i < model.nBody; i++) {
+        setJointAngles(i,jIndex);
         Xj = sMat::Zero();
-        Xj = jointSpatialTransform(_jointTypes[i], _jointAxes[i], _state.q[i-1]);
-        _Xup[i] = Xj*_Xtree[i];
-        _X0[i] = _Xup[i]*_X0[_parents[i]];
-        _S[i] = jointMotionSubspace(_jointTypes[i], _jointAxes[i]);
-        vJ = _S[i]*_state.dq[i-1];
-        _v[i] = _Xup[i]*_v[_parents[i]] + vJ;
-        _a[i] = _Xup[i] * _a[_parents[i]] + crm(_v[i])*vJ + _S[i] * _dstate.ddq[i-1];
-        _f[i] = _Ibody[i].getMatrix() * _a[i] + crf(_v[i])*_Ibody[i].getMatrix()*_v[i] - _fext[i];
+        Xj = jointSpatialTransform(model._jointTypes[i], model._jointAxes[i], model._q[i]);
+        _Xup[i] = Xj*model._Xtree[i];
+        _X0[i] = _Xup[i]*_X0[model._parents[i]];
+        _S[i] = jointMotionSubspace(model._jointTypes[i], model._jointAxes[i]);
+        vJ = _S[i]*model._dq[i];
+        _v[i] = _Xup[i]*_v[model._parents[i]] + vJ;
+        _a[i] = _Xup[i] * _a[model._parents[i]] + crm(_v[i])*vJ + _S[i] * model._ddq[i];
+        _f[i] = model._Ibody[i].getMatrix() * _a[i] + crf(_v[i])*model._Ibody[i].getMatrix()*_v[i] - _fext[i];
     }
 
-    for(int i=nBody-1; i>0; i--) {
-        genForce[i-1] = _S[i].dot(_f[i]);
-        if(_parents[i] != 0) {
-            _f[_parents[i]] = _f[_parents[i]] + _Xup[i].transpose()*_f[i];
+    for(int i=model.nBody-1; i>0; i--) {
+        genForce[i] = _S[i].dot(_f[i]);
+        if(model._parents[i] != 0) {
+            _f[model._parents[i]] = _f[model._parents[i]] + _Xup[i].transpose()*_f[i];
         }
     }
         
@@ -147,9 +161,9 @@ void RigidBodyDynamics::fixedBaseInvDyn() {
 void RigidBodyDynamics::inverseDynamics(const ModelState &state, const ModelStateDerivative &dstate) {
     setState(state);
     setDState(dstate); 
-    if(_jointTypes[0] == JointType::Floating) {
+    if(model._jointTypes[0] == JointType::Floating) {
         floatingBaseInvDyn();
-    } else if(_jointTypes[0] == JointType::Fixed) {
+    } else if(model._jointTypes[0] == JointType::Fixed) {
         fixedBaseInvDyn();
     } else {
         std::cout << "Unknown base, inverse Dynamics can not be solved" << std::endl;

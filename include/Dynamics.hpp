@@ -3,8 +3,9 @@
 
 #include "modelParameters.hpp"
 
-class RigidBodyDynamics : public virtual ModelParameters {
+class RigidBodyDynamics {
     private:
+    ModelParameters model;
     ModelState _state;
     ModelStateDerivative _dstate;
     vectorAligned<sMat> _Xup, _Xa, _X0;
@@ -13,14 +14,16 @@ class RigidBodyDynamics : public virtual ModelParameters {
 
     void setState(const ModelState& state);
     void setDState(const ModelStateDerivative& dstate);
+    void setJointAngles(int i, int &jIndex);
+    void forceSelectionMatrix();
 
     protected:
-    void initDynamics();        
+    void initDynamics(ModelParameters urdf);        
     void floatingBaseInvDyn();
     void fixedBaseInvDyn();
     public: 
 
-    Eigen::VectorXd genForce; 
+    Eigen::VectorXd genForce, jointTorques;
 
     RigidBodyDynamics();
     void applyExternalForce(const int bodyId, const Vec3 &pos, const Vec6 &fext);

@@ -22,7 +22,6 @@ struct ModelStateDerivative {
 };
 
 struct ModelParameters {
-    protected:
     int nBody;
     int nDof;
 
@@ -49,6 +48,8 @@ struct ModelParameters {
     std::vector<sMat, Eigen::aligned_allocator<sMat>> _Xtree;
     std::vector<int> _parents;
     std::vector<SpatialInertia, Eigen::aligned_allocator<SpatialInertia>> _Ibody;
+    Eigen::MatrixXd _Sf;
+    std::vector<double> _q, _dq, _ddq;
 
     
 };

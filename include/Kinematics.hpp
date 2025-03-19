@@ -3,8 +3,9 @@
 
 #include "modelParameters.hpp"
 
-class RigidBodyKinematics : public virtual ModelParameters{
+class RigidBodyKinematics {
     private:
+    ModelParameters model;
     ModelState _state;
     ModelStateDerivative _dstate;
     vectorAligned<tMat> _T, _T0;
@@ -16,7 +17,7 @@ class RigidBodyKinematics : public virtual ModelParameters{
 
     public:
 
-    void initKinematics();
+    void initKinematics(ModelParameters urdf);
     Vec3 homogenousFK(const int& bodyId, const ModelState& state, const Vec3& pos);
     Vec3 forwardKinematics(const int& bodyId, const ModelState& state, const Vec3& pos);
     Eigen::MatrixXd bodyJacobian(const ModelState& state);
