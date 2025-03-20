@@ -293,7 +293,11 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
         std::cout << "\033[35m  RIGID BODY MODEL INFORMATION \033[0m" << std::endl;
 
         std::cout << "\n";
-        std::cout << "\033[32m_urdf._Xtree: \033[0m" << std::endl;
+        std::cout << "\033[32mNumber of Bodies: \033[0m" << _urdf.nBody << std::endl;
+        std::cout << "\033[32mNumber of DoF: \033[0m" << _urdf.nDof << std::endl;
+
+        std::cout << "\n";
+        std::cout << "\033[32mXtree: \033[0m" << std::endl;
         for(int i=0; i<_urdf.nBody; i++) {
             std::cout << _urdf._Xtree[i] << std::endl;
             std::cout << "---------------\033[0m" << std::endl;
@@ -308,6 +312,11 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
         for(int i=0; i<_urdf.nBody; i++) {
             std::cout << toString(_urdf._jointAxes[i]) << std::endl;
         }
+
+        std::cout << "\n";
+        std::cout << "\033[32mJoint Force Selection Matrix: \033[0m" << std::endl;
+        std::cout<< _urdf._Sf << std::endl;
+
         std::cout << "\n";
         std::cout << "\033[32mParent Bodies: \033[0m" << std::endl;
         for(int i=0; i<_urdf.nBody; i++) {
@@ -332,6 +341,7 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
         _urdf._Sf.resize(_urdf.nDof, _urdf.nBody);
         _urdf._Sf.setZero();
         Eigen::RowVectorXd sF(_urdf.nBody);
+        int rowIndex = 0;
 
         for(int i=0; i<_urdf.nBody; i++) {
             RotMat R = coordinateRotation(CoordinateAxis::Z, _urdf._jointRotations[i](2))*coordinateRotation(CoordinateAxis::Y, _urdf._jointRotations[i](1))*coordinateRotation(CoordinateAxis::X, _urdf._jointRotations[i](0));
@@ -346,17 +356,14 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
             sF.setZero();
             if(_urdf._jointTypes[i] != JointType::Fixed) {
                 sF(_urdf._jointIDs[i]) = 1;
-            }    
-            std::cout<< sF << std::endl;
-
-            // for(int j=0; j<_urdf.nDof; j++){
-            //     _urdf._Sf.row(i) = sF;
-            // }     
+                _urdf._Sf.row(rowIndex) = sF;
+                rowIndex++;
+            }     
 
             _urdf._gravity.template tail<3>() = gravity;
         }
-        // printURDFInfo();
-        // printModelInfo();
+        printURDFInfo();
+        printModelInfo();
 
     }
 

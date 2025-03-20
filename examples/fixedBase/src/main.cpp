@@ -109,8 +109,8 @@ int main(int argc, char** argv) {
         robot->setGeneralizedForce(F);
         /* #endregion */
         // robotModel.applyExternalForce(2, Vec3(0.01,0,0.25), Vec6(0,0,0,Fcon(0),Fcon(1),Fcon(2)));
-        robotModel.applyExternalForce(robotModel.getBodyID("link1"), Vec3(0,0,0.125), Vec6(0,0,0,10,0,0));
-        robot->setExternalForce(robot->getBodyIdx("link1"),{10,0,0});
+        robotModel.applyExternalForce(robotModel.getBodyID("link2"), Vec3(0,0,0.19), Vec6(0,0,0,10,0,0));
+        robot->setExternalForce(robot->getBodyIdx("link2"),{10,0,0});
         // robot->setExternalTorque(robot->getBodyIdx("link2"), {10,0,0});
 
         server.integrateWorldThreadSafe();
