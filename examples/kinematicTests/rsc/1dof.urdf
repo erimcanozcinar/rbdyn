@@ -97,7 +97,26 @@
     </collision>
   </link>
 
-
+  <link name="link3">
+	  <inertial>
+     <origin xyz="0 0 0.005" rpy="0 0 0"/>
+     <mass value="1"/>
+     <inertia ixx="1e-6"  ixy="0"  ixz="0" iyy="1e-6" iyz="0" izz="1e-6" />
+    </inertial>
+	  <visual>
+     <origin xyz="0 0 0" rpy="0 0 0" />
+     <geometry>
+       <sphere radius="0.01"/>
+     </geometry>
+     <material name="orange"/>
+    </visual>
+	  <collision>
+     <origin xyz="0 0 0" rpy="0 0 0"/>
+     <geometry>
+       <sphere radius="0.01"/>
+     </geometry>
+    </collision>
+  </link>
   
 
   <!-- Joints -->
@@ -106,13 +125,6 @@
     <child link="trunk"/>
     <origin xyz="0 0 0.15" rpy="0 0 0" />
   </joint>
-
-  <!-- <joint name="Joint1" type="revolute">
-    <parent link="base"/>
-    <child link="trunk"/>
-    <axis xyz="0 1 0"/>
-    <origin xyz="0 0.04 0" rpy="0 0 0" />
-  </joint> -->
 
   <joint name="Joint1" type="revolute">
     <parent link="trunk"/>
@@ -125,6 +137,12 @@
     <parent link="link1"/>
     <child link="link2"/>
     <axis xyz="1 0 0"/>
+    <origin xyz="0 0 0.250" rpy="0 0 0" />
+  </joint>
+
+  <joint name="Joint3" type="fixed">
+    <parent link="link2"/>
+    <child link="link3"/>
     <origin xyz="0 0 0.250" rpy="0 0 0" />
   </joint>
 

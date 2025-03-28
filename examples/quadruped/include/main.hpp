@@ -13,7 +13,7 @@
 
 ModelState robotState;
 ModelStateDerivative robotDState;
-RigidBodyModel robotModel("/home/erim/rbdyn/examples/quadruped/rsc/urdf/quadruped.urdf");
+RigidBodyModel robotModel("/home/erim/rbdyn/examples/quadruped/rsc/urdf/quadruped2.urdf");
 
 double t, dt;
 Eigen::VectorXd genCoordinates(19), genVelocity(18), F(18), quat(4); 

@@ -13,13 +13,15 @@
 
 ModelState robotState;
 ModelStateDerivative robotDState;
-RigidBodyModel robotModel("/home/erim/rbdyn/examples/kinematicTests/rsc/1dof.urdf");
+RigidBodyModel robotModel("/home/erim/rbdyn/examples/kinematicTests/rsc/1dof2.urdf");
 
 double t, dt;
-Eigen::VectorXd genCoordinates(2), genVelocity(2), F(2), quat(4); 
-Eigen::VectorXd refQ(2), refdQ(2), jffTorques(2), TauJoint(2);
+Eigen::VectorXd genCoordinates(4), genVelocity(4), F(4), quat(4); 
+Eigen::VectorXd refQ(4), refdQ(4), jffTorques(4), TauJoint(4);
 
 raisim::Mat<3,3> frameOri;
+Eigen::Vector4d Qinit;
+Eigen::Vector4d Qik;
 
 Eigen::Vector3d Fcon, Pcon;
 

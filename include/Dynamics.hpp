@@ -12,6 +12,8 @@ class RigidBodyDynamics {
     vectorAligned<Vec6> _S, _v, _a, _ar, _a0, _c, _f, _fext, _p, _pc;
     vectorAligned<Mat6> _Ic;
 
+    Eigen::VectorXd genF;
+
     void setState(const ModelState& state);
     void setDState(const ModelStateDerivative& dstate);
     void setJointAngles(int i, int &jIndex);
@@ -23,7 +25,7 @@ class RigidBodyDynamics {
     void fixedBaseInvDyn();
     public: 
 
-    Eigen::VectorXd genForce, jointTorques;
+    Eigen::VectorXd genForce;
 
     RigidBodyDynamics();
     void applyExternalForce(const int bodyId, const Vec3 &pos, const Vec6 &fext);

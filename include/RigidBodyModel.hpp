@@ -4,6 +4,7 @@
 #include <tinyxml2.h>
 #include <iostream>
 #include <fstream>
+#include <algorithm>
 #include "Dynamics.hpp"
 #include "Kinematics.hpp"
 
@@ -35,6 +36,16 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
         else
             return CoordinateAxis::None;
 
+    }
+
+    int jointAxisCoef(const char* joint_axis) {
+        int c = 0;
+        if(strcmp(joint_axis, "1 0 0") == 0 || strcmp(joint_axis, "0 1 0") == 0 || strcmp(joint_axis, "0 0 1") == 0)
+            return c = 1;
+        else if(strcmp(joint_axis, "-1 0 0") == 0 || strcmp(joint_axis, "0 -1 0") == 0 || strcmp(joint_axis, "0 0 -1") == 0)
+            return c = -1;
+        else
+            return c = 0;
     }
 
     std::string loadURDFContent(const std::string& file_path) {
@@ -98,11 +109,17 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
         _urdf._jointChilds.push_back(std::string(joint->FirstChildElement("child")->Attribute("link")));
         _urdf._jointParentIDs.push_back(getBodyID(_urdf._jointParents[jointID]));        
         _urdf._jointChildIDs.push_back(getBodyID(_urdf._jointChilds[jointID]));
+
+        if(_urdf._jointTypes[jointID] != JointType::Fixed) {
+            _urdf._movalbeJoints.push_back(_urdf._jointIDs[jointID]);
+        }
         
         if(joint->FirstChildElement("axis")) {
             _urdf._jointAxes.push_back(jointAxisConvert(joint->FirstChildElement("axis")->Attribute("xyz")));
+            _urdf._jointAxisCoef.push_back(jointAxisCoef(joint->FirstChildElement("axis")->Attribute("xyz")));
         } else {
             _urdf._jointAxes.push_back(CoordinateAxis::None);
+            _urdf._jointAxisCoef.push_back(0);
         }
         
         Eigen::Vector3d pJoint;
@@ -130,6 +147,23 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
                 dof = dof + 1;
         }
         return dof;
+    }
+
+    void getPath2Body() {
+        std::reverse(_urdf._linkIDs.begin(), _urdf._linkIDs.end());
+        for (int body_id : _urdf._linkIDs) {
+            std::vector<int> path;
+            if(body_id != 0) {
+                for(int i = body_id; i>0; i = _urdf._jointParentIDs[i]) {
+                        path.push_back(_urdf._jointIDs[i]);
+                }
+            } else {
+                path.push_back(-1);
+            }            
+            std::reverse(path.begin(), path.end());
+            _urdf._pathJoints.push_back(path);
+        }
+        std::reverse(_urdf._pathJoints.begin(), _urdf._pathJoints.end());
     }
 
     void read(const std::string& urdf_file_path) {
@@ -178,6 +212,7 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
             _urdf._jointParentIDs.insert(_urdf._jointParentIDs.begin(), -1);        
             _urdf._jointChildIDs.insert(_urdf._jointChildIDs.begin(), getBodyID(_urdf._linkNames[0]));
             _urdf._jointAxes.insert(_urdf._jointAxes.begin(), CoordinateAxis::None);
+            _urdf._jointAxisCoef.insert(_urdf._jointAxisCoef.begin(), 1);
             _urdf._jointLocations.insert(_urdf._jointLocations.begin(), Eigen::Vector3d::Zero());
             _urdf._jointRotations.insert(_urdf._jointRotations.begin(), Eigen::Vector3d::Zero());
         } else {
@@ -189,6 +224,7 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
             _urdf._jointParentIDs.insert(_urdf._jointParentIDs.begin(), -1);        
             _urdf._jointChildIDs.insert(_urdf._jointChildIDs.begin(), getBodyID(std::string(baseChild)));
             _urdf._jointAxes.insert(_urdf._jointAxes.begin(), CoordinateAxis::None);
+            _urdf._jointAxisCoef.insert(_urdf._jointAxisCoef.begin(), 0);
 
             const char* baseJointPos = robot->FirstChildElement("joint")->FirstChildElement("origin")->Attribute("xyz");
             const char* baseJointRot = robot->FirstChildElement("joint")->FirstChildElement("origin")->Attribute("rpy");
@@ -312,6 +348,11 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
         for(int i=0; i<_urdf.nBody; i++) {
             std::cout << toString(_urdf._jointAxes[i]) << std::endl;
         }
+        std::cout << "\n";
+        std::cout << "\033[32mMovable Joints: \033[0m" << std::endl;
+        for(int joint : _urdf._movalbeJoints) {
+            std::cout << joint << std::endl;
+        }
 
         std::cout << "\n";
         std::cout << "\033[32mJoint Force Selection Matrix: \033[0m" << std::endl;
@@ -321,6 +362,13 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
         std::cout << "\033[32mParent Bodies: \033[0m" << std::endl;
         for(int i=0; i<_urdf.nBody; i++) {
             std::cout << _urdf._parents[i] << std::endl;
+        }
+        std::cout << "\n";
+        std::cout << "\033[32mJoints on the path: \033[0m" << std::endl;
+        for(std::vector<int> path : _urdf._pathJoints) {
+            for(int pathJ : path)
+                std::cout << pathJ << " ";
+            std::cout << "\n";
         }
         std::cout << "\n";
         std::cout << "\033[32mSpatial Inertia: \033[0m" << std::endl;
@@ -338,9 +386,15 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
 
         setGravity(Eigen::Vector3d(0,0,-9.81));
 
-        _urdf._Sf.resize(_urdf.nDof, _urdf.nBody);
+        getPath2Body();
+
+        if(_urdf._jointTypes[0] == JointType::Floating)
+            _urdf._Sf.resize(_urdf.nDof, _urdf.nBody+5);
+        else
+            _urdf._Sf.resize(_urdf.nDof, _urdf.nBody);
+
         _urdf._Sf.setZero();
-        Eigen::RowVectorXd sF(_urdf.nBody);
+        Eigen::RowVectorXd sF(_urdf.nBody+5);
         int rowIndex = 0;
 
         for(int i=0; i<_urdf.nBody; i++) {
@@ -352,13 +406,22 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
             _urdf._q.push_back(0.0);
             _urdf._dq.push_back(0.0);
             _urdf._ddq.push_back(0.0);
-
+            
             sF.setZero();
-            if(_urdf._jointTypes[i] != JointType::Fixed) {
-                sF(_urdf._jointIDs[i]) = 1;
-                _urdf._Sf.row(rowIndex) = sF;
-                rowIndex++;
-            }     
+            if(_urdf._jointTypes[0] == JointType::Fixed) {
+                if(_urdf._jointTypes[i] != JointType::Fixed) {
+                    sF(_urdf._jointIDs[i]) = 1;
+                    _urdf._Sf.row(rowIndex) = sF;
+                    rowIndex++;
+                } 
+            } else if (_urdf._jointTypes[0] == JointType::Floating) {
+                _urdf._Sf.block<6,6>(0,0) = Mat6::Identity();
+                if(_urdf._jointTypes[i] != JointType::Fixed && _urdf._jointTypes[i] != JointType::Floating) {
+                    sF(_urdf._jointIDs[i]+5) = 1;
+                    _urdf._Sf.row(rowIndex+6) = sF;
+                    rowIndex++;
+                } 
+            }
 
             _urdf._gravity.template tail<3>() = gravity;
         }
@@ -374,7 +437,7 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
     RigidBodyModel(const std::string& urdf_file_path) {
         createModel(urdf_file_path);
         initDynamics(_urdf);
-        // initKinematics(_urdf);
+        initKinematics(_urdf);
     }
 
     int getBodyID(const std::string& name) {

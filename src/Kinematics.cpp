@@ -10,10 +10,15 @@ void RigidBodyKinematics::initKinematics(ModelParameters urdf) {
     for(int i=0; i<model.nBody+1; i++) {
         _Xup.push_back(zero66);
         _Xa.push_back(zero66);
+        _Xo.push_back(zero66);
         _T.push_back(zero44);
         _T0.push_back(zero44);
         _S.push_back(zero6);
+        _J.push_back(zero6);
     }
+
+    stateIK.q.resize(model.nDof);
+    stateIK.q.setZero();
 }
 
 void RigidBodyKinematics::setState(const ModelState& state) {
@@ -24,17 +29,41 @@ void RigidBodyKinematics::setDState(const ModelStateDerivative& dstate) {
     _dstate = dstate;
 }
 
+void RigidBodyKinematics::setJointAngles(int i, int &jIndex) {
+    if(model._jointTypes[i] != JointType::Fixed) {
+        model._q[i] = _state.q[jIndex];
+        // model._dq[i] = _state.dq[jIndex];
+        // model._ddq[i] = _dstate.ddq[jIndex];
+        jIndex++;
+    }    
+}
+
+/** Solves forward kinematics for a given position by using homogenous transformation.
+ * @param[in] bodyId Body index. It can be retrieved by getLinkID() or getBodyIdx().
+ * @param[in] state Robots states.
+ * @param[in] pos Desired point position wrt body frame. (By default it is set to zero)
+ * @param[out] out Position vector of point wrt world frame.
+ */
 Vec3 RigidBodyKinematics::homogenousFK(const int& bodyId, const ModelState& state, const Vec3& pos) {
     setState(state);
+    int jIndex = 0;
+    for(int i = 1; i < model.nBody; i++)
+        setJointAngles(i,jIndex);
     
-    sMat Xj = sMat::Zero(); 
-    Xj = jointSpatialTransform(model._jointTypes[0],model._jointAxes[0], 0);
-    _Xup[0] = Xj*model._Xtree[0];
-    _T[0] = plücker2Homogeneous(_Xup[0]);
-    _T0[0] = _T[0];
+    sMat Xj = sMat::Zero();
+    if(model._jointTypes[0] == JointType::Fixed) { 
+        Xj = jointSpatialTransform(model._jointTypes[0],model._jointAxes[0], 0);
+        _Xup[0] = Xj*model._Xtree[0];
+        _T[0] = plücker2Homogeneous(_Xup[0]);
+        _T0[0] = _T[0];
+    } else if(model._jointTypes[0] == JointType::Floating) {
+        _Xup[0] = spatialTransform(_state.baseR, _state.basePosition);
+        _T[0] = plücker2Homogeneous(_Xup[0]);
+        _T0[0] = _T[0];
+    }
 
-    for(int i = 1; i <= bodyId; i++) {
-        Xj = jointSpatialTransform(model._jointTypes[i],model._jointAxes[i], _state.q[i-1]);
+    for(int i : model._pathJoints[bodyId]) {
+        Xj = jointSpatialTransform(model._jointTypes[i],model._jointAxes[i], model._q[i]);
         _Xup[i] = Xj*model._Xtree[i];
         _T[i] = plücker2Homogeneous(_Xup[i]);
         _T0[i] = _T0[model._parents[i]]*_T[i];
@@ -43,56 +72,99 @@ Vec3 RigidBodyKinematics::homogenousFK(const int& bodyId, const ModelState& stat
     _T[bodyId+1] = homogeneousTransform(RotMat::Identity(), pos);
     _T0[bodyId+1] = _T0[bodyId]*_T[bodyId+1];
 
-    std::cout << _T0[bodyId+1].topRightCorner<3,1>() << std::endl;
     return _T0[bodyId+1].topRightCorner<3,1>();
 }
 
-Vec3 RigidBodyKinematics::forwardKinematics(const int& bodyId, const ModelState& state, const Vec3& pos) {
+/** Solves forward kinematics for a given point by using spatial transformation.
+ * @param[in] bodyId Body index. It can be retrieved by getLinkID() or getBodyIdx().
+ * @param[in] state Robots states.
+ * @param[in] pos Desired point position wrt body frame. (By default it is set to zero)
+ * @param[out] out Position vector of point wrt world frame.
+ */
+Vec3 RigidBodyKinematics::forwardKinematic(const int& bodyId, const ModelState& state, const Vec3& pos) {
     setState(state);
-
-    Vec3 P = Vec3::Zero();
+    int jIndex = 0;
+    for(int i = 1; i < model.nBody; i++)
+        setJointAngles(i,jIndex);
     
     sMat Xj = sMat::Zero(); 
-    Xj = jointSpatialTransform(model._jointTypes[0],model._jointAxes[0], 0);
-    _Xa[0] = Xj*model._Xtree[0];
+    if(model._jointTypes[0] == JointType::Fixed) {
+        Xj = jointSpatialTransform(model._jointTypes[0],model._jointAxes[0], 0);
+        _Xa[0] = Xj*model._Xtree[0];
+    } else if(model._jointTypes[0] == JointType::Floating) {
+        _Xa[0] = spatialTransform(_state.baseR, _state.basePosition);
+    }
 
-    for(int i = 1; i <= bodyId; i++) {
-        Xj = jointSpatialTransform(model._jointTypes[i],model._jointAxes[i], _state.q[i-1]);
+    for(int i : model._pathJoints[bodyId]) {
+        Xj = jointSpatialTransform(model._jointTypes[i],model._jointAxes[i], model._q[i]);
         _Xa[i] = Xj*model._Xtree[i];
         _Xa[i] = _Xa[i]*_Xa[model._parents[i]];
     }
 
-    sMat Xai = _Xa[bodyId].inverse();
-    RotMat Ri = rotationFromX(Xai);
-    Vec3 ri = translationFromX(Xai);
-    P = Ri*(pos - ri);
-    return P;
+    
+    RotMat E = rotationFromX(_Xa[bodyId]);
+    Vec3 r = translationFromX(_Xa[bodyId]);
+    return r+E.transpose()*pos;
 }
 
-Eigen::MatrixXd RigidBodyKinematics::bodyJacobian(const ModelState& state) {
-    setState(state);
+/** Calculates Jacobian matrix (6x1) of point wrt world frame.
+ * @param[in] bodyId Body index. It can be retrieved by getLinkID() or getBodyIdx().
+ * @param[in] state Robots states.
+ * @param[in] pos Desired point position wrt body frame. (By default it is set to zero)
+ * @param[out] out Jacobian matrix (6x1) wrt world frame.
+ */
+Eigen::MatrixXd RigidBodyKinematics::bodyJacobian(const int& bodyId, const ModelState& state, const Vec3& pos) {
+    Vec3 r = forwardKinematic(bodyId, state, pos);
+    sMat Xbody = spatialTransform(RotMat::Identity(), -r);
 
-    JacMat J;
-    J.resize(6,model.nBody);
-    J.setZero();
-    sMat Xj = sMat::Zero(); 
-    Xj = jointSpatialTransform(model._jointTypes[0],model._jointAxes[0], 0);
-    _S[0] = jointMotionSubspace(model._jointTypes[0], model._jointAxes[0]);
-    _Xa[0] = Xj*model._Xtree[0];
-    J.template block<6,1>(0,0) = _Xa[0].inverse()*_S[0];
+    Eigen::MatrixXd bodyJac(6,model.nDof);
+    bodyJac.setZero();
 
-    for(int i = 1; i < model.nBody; i++) {
-        Xj = jointSpatialTransform(model._jointTypes[i],model._jointAxes[i], _state.q[i-1]);
-        _S[i] = jointMotionSubspace(model._jointTypes[i], model._jointAxes[i]);
-        _Xa[i] = Xj*model._Xtree[i];
-        if(model._parents[i] != 0 && model._parents[i] != -1)
-            _Xa[i] = _Xa[i]*_Xa[model._parents[i]];
-        
-        J.block<6,1>(0,i) = _Xa[i].inverse()*_S[i];
+    for(int i : model._pathJoints[bodyId]) {
+        auto it = std::find(model._movalbeJoints.begin(), model._movalbeJoints.end(),i);
+        int idx = std::distance(model._movalbeJoints.begin(),it);
+        if(model._jointTypes[i] != JointType::Fixed) {
+            _S[i] = jointMotionSubspace(model._jointTypes[i], model._jointAxes[i], model._jointAxisCoef[i]);  
+            _J[i] = (_Xa[i]*Xbody).inverse()*_S[i];
+            bodyJac.col(idx) = _J[i];
+        }
     }
-    J = _Xa[2]*_Xa[1]*_Xa[0]*J;
-    // std::cout << J << std::endl;
-    // std::cout << "---------------" << std::endl;
-    return J.block<3,2>(3,1);
+    return bodyJac;
 }
 
+/** Solves inverse kinematic for given body position.
+ * @param[in] bodyId Body index. It can be retrieved by getLinkID() or getBodyIdx().
+ * @param[in] desPos Desired body position.
+ * @param[in] err_tol Error tolerance.
+ * @param[in] max_iter Maximum number of iterations.
+ * @param[out] out Joint angles in radian.
+ */
+Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& bodyId, const std::vector<Vec3>& desPos, const double& err_tol, const int& max_iter) {
+    
+    int iter = 0;
+    Vec3 error = Vec3::Zero();
+      
+    for(int i=0; i<bodyId.size(); i++) {
+        while(true) {
+            Eigen::MatrixXd J = bodyJacobian(bodyId[i], stateIK).block(3,0,3,model.nDof);
+            Vec3 pos = forwardKinematic(bodyId[i], stateIK);
+            error = desPos[i] - pos;
+            stateIK.q = stateIK.q + J.completeOrthogonalDecomposition().pseudoInverse()*error;
+
+            iter++;
+            if(iter > max_iter) {
+                std::cerr << "Error: Inverse kinematic could not be solved. Maximum iteration exeeded." << std::endl;
+                std::cerr << "Error norm:" << error.norm() << std::endl;
+                std::cerr << "Number of iteration:" << iter << std::endl;
+                break;
+            }
+
+            if(error.norm() <= err_tol) {                
+                break;
+            }
+        }
+    }
+    std::cout << error.norm() << std::endl;
+    std::cout << iter << std::endl;
+    return stateIK.q;
+}

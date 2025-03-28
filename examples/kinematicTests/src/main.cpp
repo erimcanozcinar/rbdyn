@@ -13,12 +13,12 @@ int main(int argc, char** argv) {
     auto ground = world.addGround(0, "steel");
     // ground->setAppearance("hidden");
 
-    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/kinematicTests/rsc/1dof.urdf");
+    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/kinematicTests/rsc/1dof2.urdf");
     /* #endregion */
     
   
     /* #region: Initialize Robot */
-    genCoordinates << 0*M_PI/180, 0*M_PI/180; 
+    genCoordinates << 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180; 
     genVelocity << 0, 0, 0, 0;
     robot->setGeneralizedCoordinate(genCoordinates);
     robot->setGeneralizedVelocity(genVelocity);
@@ -40,6 +40,7 @@ int main(int argc, char** argv) {
     std::vector<Eigen::Vector3d> axes(robot->getDOF());
     torqueFromInverseDynamics.setZero();
 
+    Qinit = Eigen::Vector4d(0,0,0,0);
     
     while (1) {
         RS_TIMED_LOOP(int(world.getTimeStep()*1e6));
@@ -72,8 +73,26 @@ int main(int argc, char** argv) {
         robotDState.ddq = robot->getGeneralizedAcceleration().e();
 
         /* #region: Kinematis */
-        robotModel.homogenousFK(robotModel.getBodyID("link1"),robotState, Vec3(0,0,0.25));
-        RSWARN(robotModel.forwardKinematics(robotModel.getBodyID("link1"),robotState, Vec3(0,0,0.25)));
+        Eigen::MatrixXd jac(6,robot->getDOF()), jacT(3,robot->getDOF()), jacR(3,robot->getDOF());
+        jacT.setZero(); jacR.setZero();
+        robot->getDenseFrameJacobian(robot->getFrameIdxByName("Joint6"),jacT);
+        robot->getDenseFrameRotationalJacobian(robot->getFrameIdxByName("Joint6"),jacR);
+        jac << jacR, jacT;
+        // RSINFO(jac);
+        // RSWARN(robotModel.bodyJacobian(robotModel.getBodyID("link6"),robotState));
+        Vec3 refPosL, refPosR;
+        if(t>=5) {
+            // refPosL << 0.106523, 0.106761, 0.634004;
+            refPosL << 0.169501, 0.106761, 0.615700;
+            refPosR << 0.106523, -0.013239, 0.634004;
+        } else {
+            refPosL << 0.0, 0.06, 0.65;
+            refPosR << 0.0, -0.06, 0.65;
+        }
+        Qik = robotModel.inverseKinematic({robotModel.getBodyID("link3"), robotModel.getBodyID("link6")}, {refPosL, refPosR});
+        Qinit = Qik;
+        RSWARN(Qik);
+
         /* #endregion */
      
 
@@ -95,16 +114,16 @@ int main(int argc, char** argv) {
 
         /* #region: PD control */
         if(t>=5)
-            refQ << 10*M_PI/180, -10*M_PI/180;
+            refQ << 0*M_PI/180, -0*M_PI/180, 10*M_PI/180, -10*M_PI/180;
         else
-            refQ << 0*M_PI/180, 0*M_PI/180;
+            refQ << 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180;
 
         refdQ << 0, 0;
-        Eigen::Matrix2d Kp, Kd;
+        Eigen::Matrix4d Kp, Kd;
         Kp.setIdentity(); Kd.setIdentity();
         Kp = 50*Kp;
         Kd = 3*Kd;
-        F <<  Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(2)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(2));
+        F <<  Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(4)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(4));
         robot->setGeneralizedForce(F);
         /* #endregion */
         // robotModel.applyExternalForce(2, Vec3(0.01,0,0.25), Vec6(0,0,0,Fcon(0),Fcon(1),Fcon(2)));

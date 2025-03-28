@@ -27,10 +27,15 @@ void RigidBodyDynamics::initDynamics(ModelParameters urdf) {
         _Ic.push_back(zero66);
     }
     
-    genForce.resize(model.nBody);
-    jointTorques.resize(model.nDof);
+    if(model._jointTypes[0] == JointType::Fixed) {
+        genF.resize(model.nBody);
+        genForce.resize(model.nDof);
+    } else {
+        genF.resize(model.nBody+5);
+        genForce.resize(model.nDof);
+    }
+    genF.setZero(); 
     genForce.setZero(); 
-    jointTorques.setZero(); 
 }
 
 void RigidBodyDynamics::setState(const ModelState& state) {
@@ -46,7 +51,6 @@ void RigidBodyDynamics::setJointAngles(int i, int &jIndex) {
         model._q[i] = _state.q[jIndex];
         model._dq[i] = _state.dq[jIndex];
         model._ddq[i] = _dstate.ddq[jIndex];
-        std::cout << model._q[i] << std::endl;
         jIndex++;
     }    
 }
@@ -82,14 +86,10 @@ void RigidBodyDynamics::applyExternalForce(const int bodyId, const Vec3 &pos, co
 // }
 
 void RigidBodyDynamics::floatingBaseInvDyn() {
-    genForce.resize(model.nBody+5);
-    jointTorques.resize(model.nDof);
-    genForce.setZero(); 
-    jointTorques.setZero(); 
 
     sMat Xfb = sMat::Zero();
     // Xfb << _state.baseR, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), _state.baseR;
-    _Xup[0] = spatialTransform(_state.baseR, _state.basePosition);
+    _Xup[0] = spatialTransform(_state.baseR, _state.basePosition)*model._Xtree[0];
     _X0[0] = _Xup[0];
     _v[0] = _Xup[0]*_state.baseVelocity;
     _ar[0] = -model._gravity;
@@ -99,14 +99,14 @@ void RigidBodyDynamics::floatingBaseInvDyn() {
         setJointAngles(i, jIndex);
         Vec6 vJ = Vec6::Zero();
         sMat Xj = sMat::Zero();
-        Xj = jointSpatialTransform(model._jointTypes[i], model._jointAxes[i], model._q[i-1]);
+        Xj = jointSpatialTransform(model._jointTypes[i], model._jointAxes[i], model._jointAxisCoef[i]*model._q[i]);
         _Xup[i] = Xj*model._Xtree[i];
         _X0[i] = _Xup[i]*_X0[model._parents[i]];
-        _S[i] = jointMotionSubspace(model._jointTypes[i], model._jointAxes[i]);
-        vJ = _S[i]*model._dq[i-1];
+        _S[i] = jointMotionSubspace(model._jointTypes[i], model._jointAxes[i], model._jointAxisCoef[i]);
+        vJ = _S[i]*model._dq[i];
         _v[i] = _Xup[i]*_v[model._parents[i]] + vJ;
 
-        _ar[i] = _Xup[i] * _ar[model._parents[i]] + crm(_v[i])*vJ + _S[i] * model._ddq[i-1];
+        _ar[i] = _Xup[i] * _ar[model._parents[i]] + crm(_v[i])*vJ + _S[i] * model._ddq[i];
         _Ic[i] = model._Ibody[i].getMatrix();
         _pc[i] = model._Ibody[i].getMatrix() * _ar[i] + crf(_v[i])*model._Ibody[i].getMatrix()*_v[i] - _fext[i];
     }
@@ -119,13 +119,14 @@ void RigidBodyDynamics::floatingBaseInvDyn() {
     }
 
     _a0[0] = -_Ic[0].inverse()*_pc[0];
-    genForce.template head<6>() = _Ic[0]*_a0[0] + _pc[0];
+    genF.template head<6>() = _Ic[0]*_a0[0] + _pc[0];
     for(int i = 1; i < model.nBody; i++) {
         _a0[i] = _Xup[i]*_a0[model._parents[i]];
-        genForce(i+5) = _S[i].transpose()*(_Ic[i]*_a0[i] + _pc[i]); 
+        genF(i+5) = _S[i].transpose()*(_Ic[i]*_a0[i] + _pc[i]); 
     }       
     
-    // std::cout << genForce << std::endl;
+    genForce = model._Sf*genF;
+    std::cout << genForce << std::endl;
 }
 
 void RigidBodyDynamics::fixedBaseInvDyn() {
@@ -133,7 +134,7 @@ void RigidBodyDynamics::fixedBaseInvDyn() {
     Xj = jointSpatialTransform(model._jointTypes[0], model._jointAxes[0], 0);
     _Xup[0] = Xj*model._Xtree[0];
     _X0[0] = _Xup[0];
-    _S[0] = jointMotionSubspace(model._jointTypes[0], model._jointAxes[0]);
+    _S[0] = jointMotionSubspace(model._jointTypes[0], model._jointAxes[0], model._jointAxisCoef[0]);
     Vec6 vJ = _S[0]*0;
     _v[0] = Vec6::Zero();
     _c[0] = Vec6::Zero();
@@ -147,7 +148,7 @@ void RigidBodyDynamics::fixedBaseInvDyn() {
         Xj = jointSpatialTransform(model._jointTypes[i], model._jointAxes[i], model._q[i]);
         _Xup[i] = Xj*model._Xtree[i];
         _X0[i] = _Xup[i]*_X0[model._parents[i]];
-        _S[i] = jointMotionSubspace(model._jointTypes[i], model._jointAxes[i]);
+        _S[i] = jointMotionSubspace(model._jointTypes[i], model._jointAxes[i], model._jointAxisCoef[i]);
         vJ = _S[i]*model._dq[i];
         _v[i] = _Xup[i]*_v[model._parents[i]] + vJ;
         _a[i] = _Xup[i] * _a[model._parents[i]] + crm(_v[i])*vJ + _S[i] * model._ddq[i];
@@ -155,13 +156,13 @@ void RigidBodyDynamics::fixedBaseInvDyn() {
     }
 
     for(int i=model.nBody-1; i>0; i--) {
-        genForce[i] = _S[i].dot(_f[i]);
+        genF[i] = _S[i].dot(_f[i]);
         if(model._parents[i] != 0) {
             _f[model._parents[i]] = _f[model._parents[i]] + _Xup[i].transpose()*_f[i];
         }
     }
-    jointTorques = model._Sf*genForce;   
-    std::cout << jointTorques << std::endl;
+    genForce = model._Sf*genF;   
+    std::cout << genForce << std::endl;
 }
 
 void RigidBodyDynamics::inverseDynamics(const ModelState &state, const ModelStateDerivative &dstate) {

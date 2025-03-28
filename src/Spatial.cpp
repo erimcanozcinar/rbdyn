@@ -10,6 +10,7 @@ std::string toString(JointType joint) {
         case JointType::Revolute: return "Revolute";
         case JointType::Spherical: return "Spherical";
         case JointType::Floating: return "Floating";
+        case JointType::Continuous: return "Continuous";
         case JointType::Fixed: return "Fixed";
         default: return "Unknown";
     }
@@ -108,15 +109,15 @@ sMat jointSpatialTransform(JointType joint, CoordinateAxis axis, double q) {
 }
 
 /* Constructs joint motion subspace vector */
-Vec6 jointMotionSubspace(JointType joint, CoordinateAxis axis) {
+Vec6 jointMotionSubspace(JointType joint, CoordinateAxis axis, int c) {
     Eigen::Vector3d v(0, 0, 0);
     Vec6 phi = Vec6::Zero();
     if (axis == CoordinateAxis::X)
-        v(0) = 1;
+        v(0) = c*1;
     else if (axis == CoordinateAxis::Y)
-        v(1) = 1;
+        v(1) = c*1;
     else
-        v(2) = 1;
+        v(2) = c*1;
 
     if (joint == JointType::Prismatic)
         phi.template bottomLeftCorner<3, 1>() = v;

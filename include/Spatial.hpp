@@ -5,7 +5,7 @@
 
 namespace spatial {
 using namespace ori;
-enum class JointType { Prismatic, Revolute, Spherical, Floating, Fixed };
+enum class JointType { Prismatic, Revolute, Spherical, Floating, Continuous, Fixed };
 
 /* Converts JointType into string */
 std::string toString(JointType joint);
@@ -33,7 +33,7 @@ tMat homogeneousTransform(const RotMat& R, const Vec3& r);
 sMat jointSpatialTransform(JointType joint, CoordinateAxis axis, double q);
 
 /* Constructs joint motion subspace vector */
-Vec6 jointMotionSubspace(JointType joint, CoordinateAxis axis);
+Vec6 jointMotionSubspace(JointType joint, CoordinateAxis axis, int c);
 
 /* Motion cross product */
 Mat6 crm(const Vec6& a);

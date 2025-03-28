@@ -16,8 +16,8 @@ ModelStateDerivative robotDState;
 RigidBodyModel robotModel("/home/erim/rbdyn/examples/floatingBase/rsc/1dof_float2.urdf");
 
 double t, dt;
-Eigen::VectorXd genCoordinates(10), genVelocity(9), F(9), quat(4); 
-Eigen::VectorXd refQ(3), refdQ(3), jffTorques(3), TauJoint(9);
+Eigen::VectorXd genCoordinates(11), genVelocity(10), F(10), quat(4); 
+Eigen::VectorXd refQ(4), refdQ(4), jffTorques(10), TauJoint(10);
 
 raisim::Mat<3,3> frameOri;
 

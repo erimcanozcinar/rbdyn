@@ -44,9 +44,12 @@ struct ModelParameters {
     std::vector<Eigen::Vector3d> _jointRotations;
 
     std::vector<JointType> _jointTypes;
-    std::vector<CoordinateAxis> _jointAxes;    
+    std::vector<CoordinateAxis> _jointAxes; 
+    std::vector<int> _jointAxisCoef;   
     std::vector<sMat, Eigen::aligned_allocator<sMat>> _Xtree;
     std::vector<int> _parents;
+    std::vector<std::vector<int>> _pathJoints;
+    std::vector<int> _movalbeJoints;
     std::vector<SpatialInertia, Eigen::aligned_allocator<SpatialInertia>> _Ibody;
     Eigen::MatrixXd _Sf;
     std::vector<double> _q, _dq, _ddq;

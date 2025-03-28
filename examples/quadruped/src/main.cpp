@@ -6,6 +6,7 @@ int main(int argc, char** argv) {
     raisim::World::setActivationKey(binaryPath.getDirectory() + "\\activation.raisim");
     raisim::World world;
     world.setGravity({0,0,0});
+    robotModel.setGravity(world.getGravity().e());
 
     world.setTimeStep(0.001);
     world.setMaterialPairProp("steel", "steel", 0.95, 0.95, 0.001, 0.95, 0.001);
@@ -13,7 +14,7 @@ int main(int argc, char** argv) {
     auto ground = world.addGround(0, "steel");
     // ground->setAppearance("hidden");
 
-    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/quadruped/rsc/urdf/quadruped.urdf");
+    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/quadruped/rsc/urdf/quadruped2.urdf");
     /* #endregion */
     
   
@@ -50,7 +51,8 @@ int main(int argc, char** argv) {
     std::cout << robot->getBodyIdx("torso") << std::endl;
 
     // Fcon.setZero(); Pcon.setZero();
-    for (int loop = 0; loop < 5150; loop++) {
+    // for (int loop = 0; loop < 5150; loop++) {
+    while(true) {
         RS_TIMED_LOOP(int(world.getTimeStep()*1e6));
         t = world.getWorldTime();
         dt = world.getTimeStep();
@@ -99,10 +101,10 @@ int main(int argc, char** argv) {
 
         /* #region: PD control */
         if(t>=5)
-            refQ << 10*M_PI/180, 30*M_PI/180, -60*M_PI/180,
-                    -10*M_PI/180, -30*M_PI/180, 60*M_PI/180,
-                    -10*M_PI/180, 30*M_PI/180, -60*M_PI/180,
-                    10*M_PI/180, -30*M_PI/180, 60*M_PI/180;
+            refQ << 10*M_PI/180*sin(2*M_PI*1*t), 30*M_PI/180*sin(2*M_PI*1*t), -60*M_PI/180*sin(2*M_PI*1*t),
+                    -10*M_PI/180*sin(2*M_PI*1*t), -30*M_PI/180*sin(2*M_PI*1*t), 60*M_PI/180*sin(2*M_PI*1*t),
+                    -10*M_PI/180*sin(2*M_PI*1*t), 30*M_PI/180*sin(2*M_PI*1*t), -60*M_PI/180*sin(2*M_PI*1*t),
+                    10*M_PI/180*sin(2*M_PI*1*t), -30*M_PI/180*sin(2*M_PI*1*t), 60*M_PI/180*sin(2*M_PI*1*t);
         else
             refQ.setZero();
 
