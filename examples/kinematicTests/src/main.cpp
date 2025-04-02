@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
         robotDState.dBaseVelocity << Vec6::Zero();
         robotDState.ddq = robot->getGeneralizedAcceleration().e();
 
-        /* #region: Kinematis */
+        /* #region: Kinematics */
         Eigen::MatrixXd jac(6,robot->getDOF()), jacT(3,robot->getDOF()), jacR(3,robot->getDOF());
         jacT.setZero(); jacR.setZero();
         robot->getDenseFrameJacobian(robot->getFrameIdxByName("Joint6"),jacT);

@@ -105,14 +105,14 @@
      <inertia ixx="0"  ixy="0"  ixz="0" iyy="0" iyz="0" izz="0" />
     </inertial>
 	  <visual>
-     <origin xyz="0 0 -0.043933" rpy="0 0 0" />
+     <origin xyz="0 0 0.063198" rpy="0 0 0" />
      <geometry>
        <mesh filename="../mesh/foot.stl" scale="0.001 0.001 0.001"/>
      </geometry>
      <material name="black"></material>
     </visual>
 	  <collision>
-     <origin xyz="0 0 -0.080131" rpy="0 0 0"/>
+     <origin xyz="0 0 0.027" rpy="0 0 0"/>
      <geometry>
        <sphere radius="0.027"/>
      </geometry>
@@ -191,14 +191,14 @@
      <inertia ixx="0"  ixy="0"  ixz="0" iyy="0" iyz="0" izz="0" />
     </inertial>
 	  <visual>
-     <origin xyz="0 0 -0.043933" rpy="0 0 0" />
+     <origin xyz="0 0 0.063198" rpy="0 0 0" />
      <geometry>
        <mesh filename="../mesh/foot.stl" scale="0.001 0.001 0.001"/>
      </geometry>
      <material name="black"></material>
     </visual>
 	  <collision>
-     <origin xyz="0 0 -0.080131" rpy="0 0 0"/>
+     <origin xyz="0 0 0.027" rpy="0 0 0"/>
      <geometry>
        <sphere radius="0.027"/>
      </geometry>
@@ -277,14 +277,14 @@
      <inertia ixx="0"  ixy="0"  ixz="0" iyy="0" iyz="0" izz="0" />
     </inertial>
 	  <visual>
-     <origin xyz="0 0 -0.043933" rpy="0 0 0" />
+     <origin xyz="0 0 0.063198" rpy="0 0 0" />
      <geometry>
        <mesh filename="../mesh/foot.stl" scale="0.001 0.001 0.001"/>
      </geometry>
      <material name="black"></material>
     </visual>
 	  <collision>
-     <origin xyz="0 0 -0.080131" rpy="0 0 0"/>
+     <origin xyz="0 0 0.027" rpy="0 0 0"/>
      <geometry>
        <sphere radius="0.027"/>
      </geometry>
@@ -363,14 +363,14 @@
      <inertia ixx="0"  ixy="0"  ixz="0" iyy="0" iyz="0" izz="0" />
     </inertial>
 	  <visual>
-     <origin xyz="0 0 -0.043933" rpy="0 0 0" />
+     <origin xyz="0 0 0.063198" rpy="0 0 0" />
      <geometry>
        <mesh filename="../mesh/foot.stl" scale="0.001 0.001 0.001"/>
      </geometry>
      <material name="black"></material>
     </visual>
 	  <collision>
-     <origin xyz="0 0 -0.080131" rpy="0 0 0"/>
+     <origin xyz="0 0 0.027" rpy="0 0 0"/>
      <geometry>
        <sphere radius="0.027"/>
      </geometry>
@@ -413,7 +413,7 @@
     <parent link="shank_lf"/>
     <child link="foot_lf"/>
     <axis xyz="0 0 0"/>
-    <origin xyz="0 0 -0.224282" rpy="0 0.52359877559 0"/>  <!-- 0.52359877559 -->
+    <origin xyz="-0.053565 0 -0.317060" rpy="0 0.52359877559 0"/>  <!-- 0.52359877559 -->
   </joint>
 
   <!-- LEG RF -->
@@ -449,7 +449,7 @@
     <parent link="shank_rf"/>
     <child link="foot_rf"/>
     <axis xyz="0 0 0"/>
-    <origin xyz="0 0 -0.224282" rpy="0 0.52359877559 0"/>
+    <origin xyz="-0.053565 0 -0.317060" rpy="0 0.52359877559 0"/>
   </joint>
 
   <!-- LEG LB -->
@@ -485,7 +485,7 @@
     <parent link="shank_lb"/>
     <child link="foot_lb"/>
     <axis xyz="0 0 0"/>
-    <origin xyz="0 0 -0.224282" rpy="0 0.52359877559 0"/>
+    <origin xyz="-0.053565 0 -0.317060" rpy="0 0.52359877559 0"/>
   </joint>
 
   <!-- LEG RB -->
@@ -521,7 +521,7 @@
     <parent link="shank_rb"/>
     <child link="foot_rb"/>
     <axis xyz="0 0 0"/>
-    <origin xyz="0 0 -0.224282" rpy="0 0.52359877559 0"/>
+    <origin xyz="-0.053565 0 -0.317060" rpy="0 0.52359877559 0"/>
   </joint>
 
 </robot>

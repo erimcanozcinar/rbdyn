@@ -63,7 +63,7 @@ Vec3 RigidBodyKinematics::homogenousFK(const int& bodyId, const ModelState& stat
     }
 
     for(int i : model._pathJoints[bodyId]) {
-        Xj = jointSpatialTransform(model._jointTypes[i],model._jointAxes[i], model._q[i]);
+        Xj = jointSpatialTransform(model._jointTypes[i],model._jointAxes[i], model._jointAxisCoef[i]*model._q[i]);
         _Xup[i] = Xj*model._Xtree[i];
         _T[i] = plücker2Homogeneous(_Xup[i]);
         _T0[i] = _T0[model._parents[i]]*_T[i];
@@ -96,7 +96,7 @@ Vec3 RigidBodyKinematics::forwardKinematic(const int& bodyId, const ModelState& 
     }
 
     for(int i : model._pathJoints[bodyId]) {
-        Xj = jointSpatialTransform(model._jointTypes[i],model._jointAxes[i], model._q[i]);
+        Xj = jointSpatialTransform(model._jointTypes[i],model._jointAxes[i], model._jointAxisCoef[i]*model._q[i]);
         _Xa[i] = Xj*model._Xtree[i];
         _Xa[i] = _Xa[i]*_Xa[model._parents[i]];
     }

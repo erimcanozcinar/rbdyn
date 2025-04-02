@@ -10,7 +10,12 @@ include_directories(${EIGEN3_INCLUDE_DIRS} "/usr/local/include")
 link_directories("/usr/local/lib")
 
 add_executable(kinematicTest src/main.cpp)
+add_executable(quadrupedKinTest src/main_quadruped.cpp)
 
 target_link_libraries(kinematicTest PUBLIC raisim::raisim pthread)
 target_include_directories(kinematicTest PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_link_libraries(kinematicTest PRIVATE rbdyn)
+
+target_link_libraries(quadrupedKinTest PUBLIC raisim::raisim pthread)
+target_include_directories(quadrupedKinTest PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(quadrupedKinTest PRIVATE rbdyn)

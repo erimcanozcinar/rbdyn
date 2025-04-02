@@ -126,7 +126,7 @@ void RigidBodyDynamics::floatingBaseInvDyn() {
     }       
     
     genForce = model._Sf*genF;
-    std::cout << genForce << std::endl;
+    // std::cout << genForce << std::endl;
 }
 
 void RigidBodyDynamics::fixedBaseInvDyn() {
@@ -162,7 +162,7 @@ void RigidBodyDynamics::fixedBaseInvDyn() {
         }
     }
     genForce = model._Sf*genF;   
-    std::cout << genForce << std::endl;
+    // std::cout << genForce << std::endl;
 }
 
 void RigidBodyDynamics::inverseDynamics(const ModelState &state, const ModelStateDerivative &dstate) {
