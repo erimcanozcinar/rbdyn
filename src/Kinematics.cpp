@@ -14,7 +14,6 @@ void RigidBodyKinematics::initKinematics(ModelParameters urdf) {
         _T.push_back(zero44);
         _T0.push_back(zero44);
         _S.push_back(zero6);
-        _J.push_back(zero6);
     }
 
     stateIK.q.resize(model.nDof);
@@ -120,13 +119,21 @@ Eigen::MatrixXd RigidBodyKinematics::bodyJacobian(const int& bodyId, const Model
     Eigen::MatrixXd bodyJac(6,model.nDof);
     bodyJac.setZero();
 
+    if(model._jointTypes[0] == JointType::Floating) {
+        bodyJac.block<6,6>(0,0) = (_Xa[0]*Xbody).inverse();
+    }
+
     for(int i : model._pathJoints[bodyId]) {
         auto it = std::find(model._movalbeJoints.begin(), model._movalbeJoints.end(),i);
-        int idx = std::distance(model._movalbeJoints.begin(),it);
+        int idx = 0;        
+        if(model._jointTypes[0] == JointType::Floating)
+            idx = std::distance(model._movalbeJoints.begin(),it) + 5;
+        else
+            idx = std::distance(model._movalbeJoints.begin(),it);
+
         if(model._jointTypes[i] != JointType::Fixed) {
             _S[i] = jointMotionSubspace(model._jointTypes[i], model._jointAxes[i], model._jointAxisCoef[i]);  
-            _J[i] = (_Xa[i]*Xbody).inverse()*_S[i];
-            bodyJac.col(idx) = _J[i];
+            bodyJac.col(idx) = (_Xa[i]*Xbody).inverse()*_S[i];
         }
     }
     return bodyJac;
@@ -164,7 +171,5 @@ Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& bo
             }
         }
     }
-    std::cout << error.norm() << std::endl;
-    std::cout << iter << std::endl;
     return stateIK.q;
 }

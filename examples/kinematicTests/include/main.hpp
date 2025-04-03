@@ -19,8 +19,6 @@ double t, dt;
 Eigen::VectorXd genCoordinates(4), genVelocity(4), F(4), quat(4); 
 Eigen::VectorXd refQ(4), refdQ(4), jffTorques(4), TauJoint(4);
 
-raisim::Mat<3,3> frameOri;
-Eigen::Vector4d Qinit;
 Eigen::Vector4d Qik;
 
 Eigen::Vector3d Fcon, Pcon;

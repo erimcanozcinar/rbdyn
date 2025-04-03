@@ -10,7 +10,7 @@ class RigidBodyKinematics {
     ModelStateDerivative _dstate;
     vectorAligned<tMat> _T, _T0;
     vectorAligned<sMat> _Xup, _Xa, _Xo;
-    vectorAligned<Vec6> _S, _J;
+    vectorAligned<Vec6> _S;
 
     ModelState stateIK;
 

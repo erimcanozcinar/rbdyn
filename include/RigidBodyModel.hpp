@@ -150,8 +150,10 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
     }
 
     void getPath2Body() {
-        std::reverse(_urdf._linkIDs.begin(), _urdf._linkIDs.end());
-        for (int body_id : _urdf._linkIDs) {
+        std::vector<int> linkIds;
+        linkIds = _urdf._linkIDs;
+        std::reverse(linkIds.begin(), linkIds.end());
+        for (int body_id : linkIds) {
             std::vector<int> path;
             if(body_id != 0) {
                 for(int i = body_id; i>0; i = _urdf._jointParentIDs[i]) {
@@ -211,6 +213,7 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
             _urdf._jointChilds.insert(_urdf._jointChilds.begin(), _urdf._linkNames[0]);
             _urdf._jointParentIDs.insert(_urdf._jointParentIDs.begin(), -1);        
             _urdf._jointChildIDs.insert(_urdf._jointChildIDs.begin(), getBodyID(_urdf._linkNames[0]));
+            _urdf._movalbeJoints.insert(_urdf._movalbeJoints.begin(), _urdf._jointIDs[0]);
             _urdf._jointAxes.insert(_urdf._jointAxes.begin(), CoordinateAxis::None);
             _urdf._jointAxisCoef.insert(_urdf._jointAxisCoef.begin(), 1);
             _urdf._jointLocations.insert(_urdf._jointLocations.begin(), Eigen::Vector3d::Zero());

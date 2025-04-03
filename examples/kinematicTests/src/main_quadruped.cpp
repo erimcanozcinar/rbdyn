@@ -36,31 +36,17 @@ int main(int argc, char** argv) {
     raisim::MSLEEP(5000);
     /* #endregion */
 
-    robot->setComputeInverseDynamics(true);
-    Eigen::VectorXd torqueFromInverseDynamics(robot->getDOF());
-    std::vector<Eigen::Vector3d> axes(robot->getDOF());
-    torqueFromInverseDynamics.setZero();
 
-
-    // Fcon.setZero(); Pcon.setZero();
-    // for (int loop = 0; loop < 5150; loop++) {
     while(true) {
         RS_TIMED_LOOP(int(world.getTimeStep()*1e6));
         t = world.getWorldTime();
         dt = world.getTimeStep();
 
-        // for (auto& contact : robot->getContacts()) // LF:3, RF:2, LB:1, RB:0
-        // {
-        //     if (contact.skip()) continue;
-        //     if (robot->getBodyIdx("link") == contact.getlocalBodyIndex())
-        //     {
-        //         Fcon = -contact.getContactFrame().e().transpose() * contact.getImpulse().e() / dt;
-        //         Pcon = contact.getPosition().e().transpose();
-        //     }
-        // }
+        /* #region: Contact definition */
+        /* #endregion */
 
+        /* #region: Robot states definiton */
         quat = robot->getGeneralizedCoordinate().e().block(3,0,4,1);
-
         robotState.basePosition = robot->getGeneralizedCoordinate().e().head(3);
         robotState.baseOrientation = Eigen::Quaterniond(quat(0), quat(1), quat(2), quat(3)).normalized();
         robotState.baseR = quat2RotMat(Eigen::Quaterniond(quat(0), quat(1), quat(2), quat(3)));
@@ -71,41 +57,41 @@ int main(int argc, char** argv) {
         robotDState.dBasePosition = robot->getGeneralizedVelocity().e().head(3);
         robotDState.dBaseVelocity << robot->getGeneralizedAcceleration().e().block(3,0,3,1), robot->getGeneralizedAcceleration().e().head(3);
         robotDState.ddq = robot->getGeneralizedAcceleration().e().tail(12);
-
-        /* #region: Kinematic  */
-        RSINFO(robotModel.forwardKinematic(robotModel.getBodyID("foot_rb"), robotState));
-        RSWARN(robotModel.homogenousFK(robotModel.getBodyID("foot_lf"), robotState));
-        RSINFO(robotModel.inverseKinematic({robotModel.getBodyID("foot_lf")}, {Vec3(0.366341,0.332263,0.248625)}))
         /* #endregion */
-        
-        /* #region: RaiSim Inverse Dynamics */
-        for (int j=0; j<robot->getDOF()-6; j++) {
-            axes[j] = robot->getJointAxis(j+1).e();
-        }
-            
-        torqueFromInverseDynamics.head(3) = robot->getForceAtJointInWorldFrame(0).e();
-        torqueFromInverseDynamics.segment<3>(3) = robot->getTorqueAtJointInWorldFrame(0).e();
 
-        for (size_t j=1; j<robot->getDOF()-5; j++){
-            torqueFromInverseDynamics(j+5) = (robot->getTorqueAtJointInWorldFrame(j).e()).dot(axes[j-1]);
-        }
-        TauJoint = robot->getMassMatrix().e()*robot->getUdot().e() + robot->getNonlinearities(world.getGravity()).e();
-        // RSINFO(TauJoint)       
-        // RSWARN(torqueFromInverseDynamics)
-        robotModel.inverseDynamics(robotState, robotDState);
-        jffTorques = robotModel.genForce;
-        
+       /* #region: Forward Kinematic Result */
+        raisim::Vec<3> framePos;
+        robot->getFramePosition(robot->getFrameIdxByName("footFrame_lf"), framePos);
+        std::cout << "Forward Kinematic Results" << std::endl;
+        RSINFO(framePos.e())
+        RSWARN(robotModel.forwardKinematic(robotModel.getBodyID("foot_lf"), robotState))
+        std::cout << "-----------------------" << std::endl;
         /* #endregion */
+       
+        /* #region: Jacobian Matrix Results  */
+        Eigen::MatrixXd jac(6,robot->getDOF()), jacT(3,robot->getDOF()), jacR(3,robot->getDOF());
+        jacT.setZero(); jacR.setZero();
+        robot->getDenseFrameJacobian(robot->getFrameIdxByName("footFrame_lf"),jacT);
+        robot->getDenseFrameRotationalJacobian(robot->getFrameIdxByName("footFrame_lf"),jacR);
+        std::cout << "Jacobian Matrix Results" << std::endl;
+        jac << jacR, jacT;
+        RSINFO(jac.block(0,6,6,6));
+        RSWARN(robotModel.bodyJacobian(robotModel.getBodyID("foot_lf"), robotState).block(0,6,6,6))
+        std::cout << "-----------------------" << std::endl;
+        /* #endregion */    
+
+        /* #region: Inverse Kinematic Result */
+        Vec3 refPosLF, refPosRF;
+        refPosLF = robotModel.forwardKinematic(robotModel.getBodyID("foot_lf"), robotState);
+        refPosRF = robotModel.forwardKinematic(robotModel.getBodyID("foot_rf"), robotState);
+        std::cout << "Inverse Kinematic Results" << std::endl;
+        RSINFO(robotState.q.head(6))
+        RSWARN(robotModel.inverseKinematic({robotModel.getBodyID("foot_lf"), robotModel.getBodyID("foot_rf")}, {refPosLF, refPosRF}))
+        std::cout << "-----------------------" << std::endl;
+        /* #endregion */    
+        
 
         /* #region: PD control */
-        // if(t>=5)
-        //     refQ << 10*M_PI/180, 30*M_PI/180, -60*M_PI/180,
-        //             -10*M_PI/180, -30*M_PI/180, 60*M_PI/180,
-        //             -10*M_PI/180, 30*M_PI/180, -60*M_PI/180,
-        //             10*M_PI/180, -30*M_PI/180, 60*M_PI/180;
-        // else
-        //     refQ.setZero();
-
         refQ << 10*M_PI/180, 30*M_PI/180, -60*M_PI/180,
                     -10*M_PI/180, -30*M_PI/180, 60*M_PI/180,
                     -10*M_PI/180, 30*M_PI/180, -60*M_PI/180,
@@ -119,8 +105,6 @@ int main(int argc, char** argv) {
         robot->setGeneralizedForce(0*F);
         genCoordinates << 0, 0, 0.75, 1, 0, 0, 0, 10*M_PI/180, 30*M_PI/180, -60*M_PI/180, -10*M_PI/180, -30*M_PI/180, 60*M_PI/180, -10*M_PI/180, 30*M_PI/180, -60*M_PI/180, 10*M_PI/180, -30*M_PI/180, 60*M_PI/180;
         /* #endregion */
-        // robotModel.applyExternalForce(robot->getBodyIdx("torso"), Vec3(0,0,0), Vec6(0,0,0,10,0,0));
-        // robot->setExternalForce(robot->getBodyIdx("torso"),{0,0,0},{10,0,0});
 
         server.integrateWorldThreadSafe();
     }
