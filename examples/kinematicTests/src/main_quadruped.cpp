@@ -71,12 +71,12 @@ int main(int argc, char** argv) {
         /* #region: Jacobian Matrix Results  */
         Eigen::MatrixXd jac(6,robot->getDOF()), jacT(3,robot->getDOF()), jacR(3,robot->getDOF());
         jacT.setZero(); jacR.setZero();
-        robot->getDenseFrameJacobian(robot->getFrameIdxByName("footFrame_lf"),jacT);
-        robot->getDenseFrameRotationalJacobian(robot->getFrameIdxByName("footFrame_lf"),jacR);
+        robot->getDenseFrameJacobian(robot->getFrameIdxByName("footFrame_rf"),jacT);
+        robot->getDenseFrameRotationalJacobian(robot->getFrameIdxByName("footFrame_rf"),jacR);
         std::cout << "Jacobian Matrix Results" << std::endl;
         jac << jacR, jacT;
-        RSINFO(jac.block(0,6,6,6));
-        RSWARN(robotModel.bodyJacobian(robotModel.getBodyID("foot_lf"), robotState).block(0,6,6,6))
+        RSINFO(jac.block(0,0,6,6));
+        RSWARN(robotModel.bodyJacobian(robotModel.getBodyID("foot_rf"), robotState).block(0,0,6,6))
         std::cout << "-----------------------" << std::endl;
         /* #endregion */    
 
@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
         refPosRF = robotModel.forwardKinematic(robotModel.getBodyID("foot_rf"), robotState);
         std::cout << "Inverse Kinematic Results" << std::endl;
         RSINFO(robotState.q.head(6))
-        RSWARN(robotModel.inverseKinematic({robotModel.getBodyID("foot_lf"), robotModel.getBodyID("foot_rf")}, {refPosLF, refPosRF}))
+        RSWARN(robotModel.inverseKinematic({robotModel.getBodyID("foot_lf"), robotModel.getBodyID("foot_rf")}, {refPosLF, refPosRF}).head(6))
         std::cout << "-----------------------" << std::endl;
         /* #endregion */    
         

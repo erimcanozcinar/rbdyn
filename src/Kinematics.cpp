@@ -149,7 +149,16 @@ Eigen::MatrixXd RigidBodyKinematics::bodyJacobian(const int& bodyId, const Model
 Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& bodyId, const std::vector<Vec3>& desPos, const double& err_tol, const int& max_iter) {
     
     int iter = 0;
+    int idxCol = 0;
     Vec3 error = Vec3::Zero();
+
+    if(model._jointTypes[0] == JointType::Floating)
+        idxCol = 6;
+    else
+        idxCol = 0;
+
+    stateIK.baseR = rotationFromX(_Xa[0]);
+    stateIK.basePosition = translationFromX(_Xa[0]);
       
     for(int i=0; i<bodyId.size(); i++) {
         while(true) {
@@ -157,6 +166,7 @@ Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& bo
             Vec3 pos = forwardKinematic(bodyId[i], stateIK);
             error = desPos[i] - pos;
             stateIK.q = stateIK.q + J.completeOrthogonalDecomposition().pseudoInverse()*error;
+            std::cout << error << std::endl;
 
             iter++;
             if(iter > max_iter) {
