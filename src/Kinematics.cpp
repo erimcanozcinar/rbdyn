@@ -150,25 +150,36 @@ Eigen::MatrixXd RigidBodyKinematics::bodyJacobian(const int& bodyId, const Model
  * @param[in] max_iter Maximum number of iterations.
  * @param[out] out Joint angles in radian.
  */
-Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& bodyId, const std::vector<Vec3>& desPos, const double& err_tol, const int& max_iter) {
+Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& bodyId, 
+                                                      const std::vector<Vec3>& desPos, 
+                                                      const Eigen::VectorXd &Q_init, 
+                                                      const double& err_tol, 
+                                                      const int& max_iter) {
     
     int iter = 0;
     int idxCol = 0;
-    Vec3 error = Vec3::Zero();
 
-    if(model._jointTypes[0] == JointType::Floating)
+    if(!ik_init)
+        stateIK.q = Q_init;
+
+    if(model._jointTypes[0] == JointType::Floating) {
         idxCol = 6;
-    else
+        stateIK.baseR = rotationFromX(_Xa[0]);
+        stateIK.basePosition = translationFromX(_Xa[0]);
+    } else {
         idxCol = 0;
+        stateIK.baseR = rotationFromX(_Xa[0]);
+        stateIK.basePosition = translationFromX(_Xa[0]);
+    }
 
-    stateIK.baseR = rotationFromX(_Xa[0]);
-    stateIK.basePosition = translationFromX(_Xa[0]);
+    std::cout << stateIK.basePosition << std::endl;
+    std::cout << stateIK.baseR << std::endl;
       
     for(int i=0; i<bodyId.size(); i++) {
         while(true) {            
             Eigen::MatrixXd J = bodyJacobian(bodyId[i], stateIK).block(3,idxCol,3,model.nDof-idxCol);
             Vec3 pos = forwardKinematic(bodyId[i], stateIK);
-            error = desPos[i] - pos;
+            Vec3 error = desPos[i] - pos;
             stateIK.q = stateIK.q + J.completeOrthogonalDecomposition().pseudoInverse()*error;
 
             iter++;

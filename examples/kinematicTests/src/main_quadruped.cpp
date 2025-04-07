@@ -62,10 +62,10 @@ int main(int argc, char** argv) {
        /* #region: Forward Kinematic Result */
         raisim::Vec<3> framePos;
         robot->getFramePosition(robot->getFrameIdxByName("footFrame_lf"), framePos);
-        std::cout << "Forward Kinematic Results" << std::endl;
-        RSINFO(framePos.e())
-        RSWARN(robotModel.forwardKinematic(robotModel.getBodyID("foot_lf"), robotState))
-        std::cout << "-----------------------" << std::endl;
+        // std::cout << "Forward Kinematic Results" << std::endl;
+        // RSINFO(framePos.e())
+        // RSWARN(robotModel.forwardKinematic(robotModel.getBodyID("foot_lf"), robotState))
+        // std::cout << "-----------------------" << std::endl;
         /* #endregion */
        
         /* #region: Jacobian Matrix Results  */
@@ -73,21 +73,21 @@ int main(int argc, char** argv) {
         jacT.setZero(); jacR.setZero();
         robot->getDenseFrameJacobian(robot->getFrameIdxByName("footFrame_rf"),jacT);
         robot->getDenseFrameRotationalJacobian(robot->getFrameIdxByName("footFrame_rf"),jacR);
-        std::cout << "Jacobian Matrix Results" << std::endl;
-        jac << jacR, jacT;
-        RSINFO(jac.block(0,0,6,6));
-        RSWARN(robotModel.bodyJacobian(robotModel.getBodyID("foot_rf"), robotState).block(0,0,6,6))
-        std::cout << "-----------------------" << std::endl;
+        // std::cout << "Jacobian Matrix Results" << std::endl;
+        // jac << jacR, jacT;
+        // RSINFO(jac.block(0,6,6,6));
+        // RSWARN(robotModel.bodyJacobian(robotModel.getBodyID("foot_rf"), robotState).block(0,6,6,6))
+        // std::cout << "-----------------------" << std::endl;
         /* #endregion */    
 
         /* #region: Inverse Kinematic Result */
         Vec3 refPosLF, refPosRF;
         refPosLF = robotModel.forwardKinematic(robotModel.getBodyID("foot_lf"), robotState);
         refPosRF = robotModel.forwardKinematic(robotModel.getBodyID("foot_rf"), robotState);
-        std::cout << "Inverse Kinematic Results" << std::endl;
-        RSINFO(robotState.q.head(6))
-        RSWARN(robotModel.inverseKinematic({robotModel.getBodyID("foot_lf"), robotModel.getBodyID("foot_rf")}, {refPosLF, refPosRF}).head(6))
-        std::cout << "-----------------------" << std::endl;
+        // std::cout << "Inverse Kinematic Results" << std::endl;
+        // RSINFO(robotState.q.head(6))
+        RSWARN(robotModel.inverseKinematic({robotModel.getBodyID("foot_lf"), robotModel.getBodyID("foot_rf")}, {refPosLF, refPosRF}, genCoordinates.tail(12)).head(6))
+        // std::cout << "-----------------------" << std::endl;
         /* #endregion */    
         
 
@@ -103,7 +103,6 @@ int main(int argc, char** argv) {
         Kd = 3*Kd;
         F << 0, 0, 0, 0, 0, 0, Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(12)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(12));
         robot->setGeneralizedForce(0*F);
-        genCoordinates << 0, 0, 0.75, 1, 0, 0, 0, 10*M_PI/180, 30*M_PI/180, -60*M_PI/180, -10*M_PI/180, -30*M_PI/180, 60*M_PI/180, -10*M_PI/180, 30*M_PI/180, -60*M_PI/180, 10*M_PI/180, -30*M_PI/180, 60*M_PI/180;
         /* #endregion */
 
         server.integrateWorldThreadSafe();

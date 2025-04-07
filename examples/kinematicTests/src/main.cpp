@@ -88,7 +88,7 @@ int main(int argc, char** argv) {
         Vec3 refPosL, refPosR;
         refPosL = robotModel.forwardKinematic(robotModel.getBodyID("link3"), robotState);
         refPosR = robotModel.forwardKinematic(robotModel.getBodyID("link6"), robotState);
-        Qik = robotModel.inverseKinematic({robotModel.getBodyID("link3"), robotModel.getBodyID("link6")}, {refPosL, refPosR});
+        Qik = robotModel.inverseKinematic({robotModel.getBodyID("link3"), robotModel.getBodyID("link6")}, {refPosL, refPosR}, genCoordinates);
         std::cout << "Inverse Kinematic Results" << std::endl;
         RSINFO(robotState.q)
         RSWARN(Qik)
