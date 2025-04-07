@@ -16,7 +16,11 @@ void RigidBodyKinematics::initKinematics(ModelParameters urdf) {
         _S.push_back(zero6);
     }
 
-    stateIK.q.resize(model.nDof);
+    if(model._jointTypes[0] == JointType::Floating)
+        stateIK.q.resize(model.nDof-6);
+    else
+        stateIK.q.resize(model.nDof);
+
     stateIK.q.setZero();
 }
 
@@ -161,12 +165,11 @@ Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& bo
     stateIK.basePosition = translationFromX(_Xa[0]);
       
     for(int i=0; i<bodyId.size(); i++) {
-        while(true) {
-            Eigen::MatrixXd J = bodyJacobian(bodyId[i], stateIK).block(3,0,3,model.nDof);
+        while(true) {            
+            Eigen::MatrixXd J = bodyJacobian(bodyId[i], stateIK).block(3,idxCol,3,model.nDof-idxCol);
             Vec3 pos = forwardKinematic(bodyId[i], stateIK);
             error = desPos[i] - pos;
             stateIK.q = stateIK.q + J.completeOrthogonalDecomposition().pseudoInverse()*error;
-            std::cout << error << std::endl;
 
             iter++;
             if(iter > max_iter) {

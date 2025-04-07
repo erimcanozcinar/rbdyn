@@ -70,8 +70,8 @@ int main(int argc, char** argv) {
         /* #region: Jacobian Matrix */
         Eigen::MatrixXd jac(6,robot->getDOF()), jacT(3,robot->getDOF()), jacR(3,robot->getDOF());
         jacT.setZero(); jacR.setZero();
-        robot->getDenseFrameJacobian(robot->getFrameIdxByName("Joint6"),jacT);
-        robot->getDenseFrameRotationalJacobian(robot->getFrameIdxByName("Joint6"),jacR);
+        robot->getDenseFrameJacobian(robot->getFrameIdxByName("Joint3"),jacT);
+        robot->getDenseFrameRotationalJacobian(robot->getFrameIdxByName("Joint3"),jacR);
         jac << jacR, jacT;
         // std::cout << "Jacobian Matrix Results" << std::endl;
         // RSINFO(jac)
@@ -84,15 +84,15 @@ int main(int argc, char** argv) {
         refPosL = robotModel.forwardKinematic(robotModel.getBodyID("link3"), robotState);
         refPosR = robotModel.forwardKinematic(robotModel.getBodyID("link6"), robotState);
         Qik = robotModel.inverseKinematic({robotModel.getBodyID("link3"), robotModel.getBodyID("link6")}, {refPosL, refPosR});
-        // std::cout << "Inverse Kinematic Results" << std::endl;
-        // RSINFO(robotState.q)
-        // RSWARN(Qik)
-        // std::cout << "-----------------------" << std::endl;
+        std::cout << "Inverse Kinematic Results" << std::endl;
+        RSINFO(robotState.q)
+        RSWARN(Qik)
+        std::cout << "-----------------------" << std::endl;
         /* #endregion */
 
         /* #region: PD control */
         if(t>=5)
-            refQ << 40*M_PI/180, -40*M_PI/180, -40*M_PI/180, -40*M_PI/180;
+            refQ << 10*M_PI/180, -20*M_PI/180, -15*M_PI/180, 5*M_PI/180;
         else
             refQ << 0*M_PI/180, 0*M_PI/180, 0*M_PI/180, 0*M_PI/180;
 
