@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     // auto ground = world.addGround(0, "steel");
     // ground->setAppearance("hidden");
 
-    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/floatingBase/rsc/1dof_float2.urdf");
+    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/rsc/floatingBase/1dof_float2.urdf");
     /* #endregion */
     
   

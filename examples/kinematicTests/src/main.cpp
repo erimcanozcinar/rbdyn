@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
     auto ground = world.addGround(0, "steel");
     // ground->setAppearance("hidden");
 
-    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/kinematicTests/rsc/1dof2.urdf");
+    auto robot = world.addArticulatedSystem("/home/erim/rbdyn/examples/rsc/fixedBase/1dof2.urdf");
     /* #endregion */
     
   
