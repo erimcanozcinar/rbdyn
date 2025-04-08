@@ -126,7 +126,6 @@ void RigidBodyDynamics::floatingBaseInvDyn() {
     }       
     
     genForce = model._Sf*genF;
-    // std::cout << genForce << std::endl;
 }
 
 void RigidBodyDynamics::fixedBaseInvDyn() {
@@ -161,10 +160,13 @@ void RigidBodyDynamics::fixedBaseInvDyn() {
             _f[model._parents[i]] = _f[model._parents[i]] + _Xup[i].transpose()*_f[i];
         }
     }
-    genForce = model._Sf*genF;   
-    // std::cout << genForce << std::endl;
+    genForce = model._Sf*genF;
 }
 
+/** Solves inverse dynamics of system. Output of this function is genForce.
+ *  @param[in] state States of the system.
+ *  @param[in] dstate Derivative of states of the system.
+ */
 void RigidBodyDynamics::inverseDynamics(const ModelState &state, const ModelStateDerivative &dstate) {
     setState(state);
     setDState(dstate); 

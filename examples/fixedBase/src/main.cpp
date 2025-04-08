@@ -71,12 +71,6 @@ int main(int argc, char** argv) {
         robotDState.dBaseVelocity << Vec6::Zero();
         robotDState.ddq = robot->getGeneralizedAcceleration().e();
 
-        /* #region: Newton-Euler */
-        // quat << robot->getGeneralizedCoordinate().e().segment(3,4);
-        // Eigen::Quaterniond Quat(quat(0),quat(1),quat(2),quat(3));
-        // jffTorques = funcNewtonEuler(robot->getGeneralizedCoordinate().e().head(3),robot->getGeneralizedAcceleration().e().head(3),quat2Rotmat2(Quat),robot->getGeneralizedVelocity().e().segment(3,3), robot->getGeneralizedAcceleration().e().segment(3,3), robot->getGeneralizedCoordinate().e().tail(1), robot->getGeneralizedVelocity().e().tail(1), robot->getGeneralizedAcceleration().e().tail(1),0*Fcon, 0*Pcon);
-        /* #endregion */
-
         /* #region: RaiSim Inverse Dynamics */
         for (int j=0; j<robot->getDOF(); j++) {
             axes[j] = robot->getJointAxis(j+1).e();
@@ -87,11 +81,10 @@ int main(int argc, char** argv) {
             torqueFromInverseDynamics(j) = (robot->getTorqueAtJointInWorldFrame(j+1).e()).dot(axes[j]);
         }
             
-        TauJoint = robot->getMassMatrix().e()*robot->getUdot().e() + robot->getNonlinearities(world.getGravity()).e();
-        // RSWARN(TauJoint)       
-        RSWARN(torqueFromInverseDynamics)
+        TauJoint = robot->getMassMatrix().e()*robot->getUdot().e() + robot->getNonlinearities(world.getGravity()).e();      
         robotModel.inverseDynamics(robotState, robotDState);
-        // Eigen::VectorXd a = fixDyn.inverseDynamics(robotState, robotDState);
+        RSINFO(torqueFromInverseDynamics)
+        RSWARN(robotModel.genForce)
         /* #endregion */
 
         /* #region: PD control */
