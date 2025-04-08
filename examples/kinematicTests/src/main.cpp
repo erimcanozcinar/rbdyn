@@ -68,7 +68,7 @@ int main(int argc, char** argv) {
         robot->getFramePosition(robot->getFrameIdxByName("Joint6"), framePos);
         std::cout << "Forward Kinematic Results" << std::endl;
         RSINFO(framePos.e())
-        RSWARN(robotModel.forwardKinematic(robotModel.getJointID("Joint6"), robotState))
+        RSWARN(robotModel.forwardKinematic(robotModel.getFrameID("Joint6"), robotState))
         std::cout << "-----------------------" << std::endl;
         /* #endregion */
         
@@ -80,15 +80,15 @@ int main(int argc, char** argv) {
         jac << jacR, jacT;
         std::cout << "Jacobian Matrix Results" << std::endl;
         RSINFO(jac)
-        RSWARN(robotModel.bodyJacobian(robotModel.getJointID("Joint6"),robotState));
+        RSWARN(robotModel.bodyJacobian(robotModel.getFrameID("Joint6"),robotState));
         std::cout << "-----------------------" << std::endl;
         /* #endregion */
 
         /* #region: Inverse Kinematic */
         Vec3 refPosL, refPosR;
-        refPosL = robotModel.forwardKinematic(robotModel.getJointID("Joint3"), robotState);
-        refPosR = robotModel.forwardKinematic(robotModel.getJointID("Joint6"), robotState);
-        Qik = robotModel.inverseKinematic({robotModel.getJointID("Joint3"), robotModel.getJointID("Joint6")}, {refPosL, refPosR}, genCoordinates, robotState.basePosition, robotState.baseR);
+        refPosL = robotModel.forwardKinematic(robotModel.getFrameID("Joint3"), robotState);
+        refPosR = robotModel.forwardKinematic(robotModel.getFrameID("Joint6"), robotState);
+        Qik = robotModel.inverseKinematic({robotModel.getFrameID("Joint3"), robotModel.getFrameID("Joint6")}, {refPosL, refPosR}, genCoordinates, robotState.basePosition, robotState.baseR);
         std::cout << "Inverse Kinematic Results" << std::endl;
         RSINFO(robotState.q)
         RSWARN(Qik)
