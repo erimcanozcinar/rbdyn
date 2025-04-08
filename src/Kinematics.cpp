@@ -143,7 +143,7 @@ Eigen::MatrixXd RigidBodyKinematics::bodyJacobian(const int& bodyId, const Model
     return bodyJac;
 }
 
-/** Solves inverse kinematic for given body position.
+/** Solves inverse kinematic for given body position wrt world frame.
  * @param[in] bodyId Body index. It can be retrieved by getLinkID() or getBodyIdx().
  * @param[in] desPos Desired body position.
  * @param[in] err_tol Error tolerance.
@@ -152,7 +152,9 @@ Eigen::MatrixXd RigidBodyKinematics::bodyJacobian(const int& bodyId, const Model
  */
 Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& bodyId, 
                                                       const std::vector<Vec3>& desPos, 
-                                                      const Eigen::VectorXd &Q_init, 
+                                                      const Eigen::VectorXd &Q_init,
+                                                      const Vec3 &basePos,
+                                                      const RotMat &baseRot,
                                                       const double& err_tol, 
                                                       const int& max_iter) {
     
@@ -164,16 +166,13 @@ Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& bo
 
     if(model._jointTypes[0] == JointType::Floating) {
         idxCol = 6;
-        stateIK.baseR = rotationFromX(_Xa[0]);
-        stateIK.basePosition = translationFromX(_Xa[0]);
+        stateIK.baseR = baseRot;
+        stateIK.basePosition = basePos;
     } else {
         idxCol = 0;
         stateIK.baseR = rotationFromX(_Xa[0]);
         stateIK.basePosition = translationFromX(_Xa[0]);
     }
-
-    std::cout << stateIK.basePosition << std::endl;
-    std::cout << stateIK.baseR << std::endl;
       
     for(int i=0; i<bodyId.size(); i++) {
         while(true) {            

@@ -81,13 +81,18 @@ int main(int argc, char** argv) {
         /* #endregion */    
 
         /* #region: Inverse Kinematic Result */
-        Vec3 refPosLF, refPosRF;
-        refPosLF = robotModel.forwardKinematic(robotModel.getBodyID("foot_lf"), robotState);
-        refPosRF = robotModel.forwardKinematic(robotModel.getBodyID("foot_rf"), robotState);
-        // std::cout << "Inverse Kinematic Results" << std::endl;
-        // RSINFO(robotState.q.head(6))
-        RSWARN(robotModel.inverseKinematic({robotModel.getBodyID("foot_lf"), robotModel.getBodyID("foot_rf")}, {refPosLF, refPosRF}, genCoordinates.tail(12)).head(6))
-        // std::cout << "-----------------------" << std::endl;
+        Vec3 refPosLF = robotModel.forwardKinematic(robotModel.getBodyID("foot_lf"), robotState);
+        Vec3 refPosRF = robotModel.forwardKinematic(robotModel.getBodyID("foot_rf"), robotState);
+        Vec3 refPosLB = robotModel.forwardKinematic(robotModel.getBodyID("foot_lb"), robotState);
+        Vec3 refPosRB = robotModel.forwardKinematic(robotModel.getBodyID("foot_rb"), robotState);
+        std::cout << "Inverse Kinematic Results" << std::endl;
+        RSINFO(robotState.q)
+        RSWARN(robotModel.inverseKinematic({robotModel.getBodyID("foot_lf"), robotModel.getBodyID("foot_rf"), robotModel.getBodyID("foot_lb"), robotModel.getBodyID("foot_rb")}, 
+                                           {refPosLF, refPosRF, refPosLB, refPosRB}, 
+                                           genCoordinates.tail(12), 
+                                           robotState.basePosition, 
+                                           robotState.baseR))
+        std::cout << "-----------------------" << std::endl;
         /* #endregion */    
         
 
