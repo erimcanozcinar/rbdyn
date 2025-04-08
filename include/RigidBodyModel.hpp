@@ -454,13 +454,13 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
         }
     }
 
-    int getJointID(const std::string& name) {
+    int getFrameID(const std::string& name) {
         auto it = std::find(_urdf._jointNames.begin(), _urdf._jointNames.end(), name);
         
         if (it != _urdf._jointNames.end()) {
             return std::distance(_urdf._jointNames.begin(), it);  // Return the index of the found link
         } else {
-            throw std::runtime_error("Link does not exist");
+            throw std::runtime_error("Joint does not exist");
             return -1;
         }
     }

@@ -42,12 +42,12 @@ void RigidBodyKinematics::setJointAngles(int i, int &jIndex) {
 }
 
 /** Solves forward kinematics for a given position by using homogenous transformation.
- * @param[in] bodyId Body index. It can be retrieved by getLinkID() or getBodyIdx().
+ * @param[in] frameId Frame index. It can be retrieved by getFrameID().
  * @param[in] state Robots states.
- * @param[in] pos Desired point position wrt body frame. (By default it is set to zero)
+ * @param[in] pos Desired point position wrt frame. (By default it is set to zero)
  * @param[out] out Position vector of point wrt world frame.
  */
-Vec3 RigidBodyKinematics::homogenousFK(const int& bodyId, const ModelState& state, const Vec3& pos) {
+Vec3 RigidBodyKinematics::homogenousFK(const int& frameId, const ModelState& state, const Vec3& pos) {
     setState(state);
     int jIndex = 0;
     for(int i = 1; i < model.nBody; i++)
@@ -65,26 +65,26 @@ Vec3 RigidBodyKinematics::homogenousFK(const int& bodyId, const ModelState& stat
         _T0[0] = _T[0];
     }
 
-    for(int i : model._pathJoints[bodyId]) {
+    for(int i : model._pathJoints[frameId]) {
         Xj = jointSpatialTransform(model._jointTypes[i],model._jointAxes[i], model._jointAxisCoef[i]*model._q[i]);
         _Xup[i] = Xj*model._Xtree[i];
         _T[i] = plücker2Homogeneous(_Xup[i]);
         _T0[i] = _T0[model._parents[i]]*_T[i];
     }
 
-    _T[bodyId+1] = homogeneousTransform(RotMat::Identity(), pos);
-    _T0[bodyId+1] = _T0[bodyId]*_T[bodyId+1];
+    _T[frameId+1] = homogeneousTransform(RotMat::Identity(), pos);
+    _T0[frameId+1] = _T0[frameId]*_T[frameId+1];
 
-    return _T0[bodyId+1].topRightCorner<3,1>();
+    return _T0[frameId+1].topRightCorner<3,1>();
 }
 
 /** Solves forward kinematics for a given point by using spatial transformation.
- * @param[in] bodyId Body index. It can be retrieved by getLinkID() or getBodyIdx().
+ * @param[in] frameId Frame index. It can be retrieved by getFrameID().
  * @param[in] state Robots states.
- * @param[in] pos Desired point position wrt body frame. (By default it is set to zero)
+ * @param[in] pos Desired point position wrt frame. (By default it is set to zero)
  * @param[out] out Position vector of point wrt world frame.
  */
-Vec3 RigidBodyKinematics::forwardKinematic(const int& bodyId, const ModelState& state, const Vec3& pos) {
+Vec3 RigidBodyKinematics::forwardKinematic(const int& frameId, const ModelState& state, const Vec3& pos) {
     setState(state);
     int jIndex = 0;
     for(int i = 1; i < model.nBody; i++)
@@ -98,26 +98,26 @@ Vec3 RigidBodyKinematics::forwardKinematic(const int& bodyId, const ModelState& 
         _Xa[0] = spatialTransform(_state.baseR, _state.basePosition);
     }
 
-    for(int i : model._pathJoints[bodyId]) {
+    for(int i : model._pathJoints[frameId]) {
         Xj = jointSpatialTransform(model._jointTypes[i],model._jointAxes[i], model._jointAxisCoef[i]*model._q[i]);
         _Xa[i] = Xj*model._Xtree[i];
         _Xa[i] = _Xa[i]*_Xa[model._parents[i]];
     }
 
     
-    RotMat E = rotationFromX(_Xa[bodyId]);
-    Vec3 r = translationFromX(_Xa[bodyId]);
+    RotMat E = rotationFromX(_Xa[frameId]);
+    Vec3 r = translationFromX(_Xa[frameId]);
     return r+E.transpose()*pos;
 }
 
 /** Calculates Jacobian matrix (6x1) of point wrt world frame.
- * @param[in] bodyId Body index. It can be retrieved by getLinkID() or getBodyIdx().
+ * @param[in] frameId Frame index. It can be retrieved by getFrameID().
  * @param[in] state Robots states.
- * @param[in] pos Desired point position wrt body frame. (By default it is set to zero)
+ * @param[in] pos Desired point position wrt frame. (By default it is set to zero)
  * @param[out] out Jacobian matrix (6x1) wrt world frame.
  */
-Eigen::MatrixXd RigidBodyKinematics::bodyJacobian(const int& bodyId, const ModelState& state, const Vec3& pos) {
-    Vec3 r = forwardKinematic(bodyId, state, pos);
+Eigen::MatrixXd RigidBodyKinematics::bodyJacobian(const int& frameId, const ModelState& state, const Vec3& pos) {
+    Vec3 r = forwardKinematic(frameId, state, pos);
     sMat Xbody = spatialTransform(RotMat::Identity(), -r);
 
     Eigen::MatrixXd bodyJac(6,model.nDof);
@@ -127,7 +127,7 @@ Eigen::MatrixXd RigidBodyKinematics::bodyJacobian(const int& bodyId, const Model
         bodyJac.block<6,6>(0,0) = (_Xa[0]*Xbody).inverse();
     }
 
-    for(int i : model._pathJoints[bodyId]) {
+    for(int i : model._pathJoints[frameId]) {
         auto it = std::find(model._movalbeJoints.begin(), model._movalbeJoints.end(),i);
         int idx = 0;        
         if(model._jointTypes[0] == JointType::Floating)
@@ -144,13 +144,13 @@ Eigen::MatrixXd RigidBodyKinematics::bodyJacobian(const int& bodyId, const Model
 }
 
 /** Solves inverse kinematic for given body position wrt world frame.
- * @param[in] bodyId Body index. It can be retrieved by getLinkID() or getBodyIdx().
+ * @param[in] frameId Frame index. It can be retrieved by getFrameID().
  * @param[in] desPos Desired body position.
  * @param[in] err_tol Error tolerance.
  * @param[in] max_iter Maximum number of iterations.
  * @param[out] out Joint angles in radian.
  */
-Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& bodyId, 
+Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& frameId, 
                                                       const std::vector<Vec3>& desPos, 
                                                       const Eigen::VectorXd &Q_init,
                                                       const Vec3 &basePos,
@@ -174,10 +174,10 @@ Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& bo
         stateIK.basePosition = translationFromX(_Xa[0]);
     }
       
-    for(int i=0; i<bodyId.size(); i++) {
+    for(int i=0; i<frameId.size(); i++) {
         while(true) {            
-            Eigen::MatrixXd J = bodyJacobian(bodyId[i], stateIK).block(3,idxCol,3,model.nDof-idxCol);
-            Vec3 pos = forwardKinematic(bodyId[i], stateIK);
+            Eigen::MatrixXd J = bodyJacobian(frameId[i], stateIK).block(3,idxCol,3,model.nDof-idxCol);
+            Vec3 pos = forwardKinematic(frameId[i], stateIK);
             Vec3 error = desPos[i] - pos;
             stateIK.q = stateIK.q + J.completeOrthogonalDecomposition().pseudoInverse()*error;
 

@@ -62,10 +62,10 @@ int main(int argc, char** argv) {
        /* #region: Forward Kinematic Result */
         raisim::Vec<3> framePos;
         robot->getFramePosition(robot->getFrameIdxByName("footFrame_lf"), framePos);
-        // std::cout << "Forward Kinematic Results" << std::endl;
-        // RSINFO(framePos.e())
-        // RSWARN(robotModel.forwardKinematic(robotModel.getBodyID("foot_lf"), robotState))
-        // std::cout << "-----------------------" << std::endl;
+        std::cout << "Forward Kinematic Results" << std::endl;
+        RSINFO(framePos.e())
+        RSWARN(robotModel.forwardKinematic(robotModel.getJointID("footFrame_lf"), robotState))
+        std::cout << "-----------------------" << std::endl;
         /* #endregion */
        
         /* #region: Jacobian Matrix Results  */
@@ -73,21 +73,21 @@ int main(int argc, char** argv) {
         jacT.setZero(); jacR.setZero();
         robot->getDenseFrameJacobian(robot->getFrameIdxByName("footFrame_rf"),jacT);
         robot->getDenseFrameRotationalJacobian(robot->getFrameIdxByName("footFrame_rf"),jacR);
-        // std::cout << "Jacobian Matrix Results" << std::endl;
-        // jac << jacR, jacT;
-        // RSINFO(jac.block(0,6,6,6));
-        // RSWARN(robotModel.bodyJacobian(robotModel.getBodyID("foot_rf"), robotState).block(0,6,6,6))
-        // std::cout << "-----------------------" << std::endl;
+        std::cout << "Jacobian Matrix Results" << std::endl;
+        jac << jacR, jacT;
+        RSINFO(jac.block(0,6,6,6));
+        RSWARN(robotModel.bodyJacobian(robotModel.getJointID("footFrame_rf"), robotState).block(0,6,6,6))
+        std::cout << "-----------------------" << std::endl;
         /* #endregion */    
 
         /* #region: Inverse Kinematic Result */
-        Vec3 refPosLF = robotModel.forwardKinematic(robotModel.getBodyID("foot_lf"), robotState);
-        Vec3 refPosRF = robotModel.forwardKinematic(robotModel.getBodyID("foot_rf"), robotState);
-        Vec3 refPosLB = robotModel.forwardKinematic(robotModel.getBodyID("foot_lb"), robotState);
-        Vec3 refPosRB = robotModel.forwardKinematic(robotModel.getBodyID("foot_rb"), robotState);
+        Vec3 refPosLF = robotModel.forwardKinematic(robotModel.getJointID("footFrame_lf"), robotState);
+        Vec3 refPosRF = robotModel.forwardKinematic(robotModel.getJointID("footFrame_rf"), robotState);
+        Vec3 refPosLB = robotModel.forwardKinematic(robotModel.getJointID("footFrame_lb"), robotState);
+        Vec3 refPosRB = robotModel.forwardKinematic(robotModel.getJointID("footFrame_rb"), robotState);
         std::cout << "Inverse Kinematic Results" << std::endl;
         RSINFO(robotState.q)
-        RSWARN(robotModel.inverseKinematic({robotModel.getBodyID("foot_lf"), robotModel.getBodyID("foot_rf"), robotModel.getBodyID("foot_lb"), robotModel.getBodyID("foot_rb")}, 
+        RSWARN(robotModel.inverseKinematic({robotModel.getJointID("footFrame_lf"), robotModel.getJointID("footFrame_rf"), robotModel.getJointID("footFrame_lb"), robotModel.getJointID("footFrame_rb")}, 
                                            {refPosLF, refPosRF, refPosLB, refPosRB}, 
                                            genCoordinates.tail(12), 
                                            robotState.basePosition, 
