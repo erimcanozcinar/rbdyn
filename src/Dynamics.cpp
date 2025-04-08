@@ -166,8 +166,9 @@ void RigidBodyDynamics::fixedBaseInvDyn() {
 /** Solves inverse dynamics of system. Output of this function is genForce.
  *  @param[in] state States of the system.
  *  @param[in] dstate Derivative of states of the system.
+ *  @param[out] genForce Joint forces and torques. 
  */
-void RigidBodyDynamics::inverseDynamics(const ModelState &state, const ModelStateDerivative &dstate) {
+Eigen::VectorXd RigidBodyDynamics::inverseDynamics(const ModelState &state, const ModelStateDerivative &dstate) {
     setState(state);
     setDState(dstate); 
     if(model._jointTypes[0] == JointType::Floating) {
@@ -177,4 +178,5 @@ void RigidBodyDynamics::inverseDynamics(const ModelState &state, const ModelStat
     } else {
         std::cout << "Unknown base, inverse Dynamics can not be solved" << std::endl;
     }
+    return genForce;
 }

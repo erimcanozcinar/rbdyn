@@ -13,6 +13,7 @@ class RigidBodyDynamics {
     vectorAligned<Mat6> _Ic;
 
     Eigen::VectorXd genF;
+    Eigen::VectorXd genForce;
 
     void setState(const ModelState& state);
     void setDState(const ModelStateDerivative& dstate);
@@ -23,14 +24,14 @@ class RigidBodyDynamics {
     void initDynamics(ModelParameters urdf);        
     void floatingBaseInvDyn();
     void fixedBaseInvDyn();
+    
     public: 
 
-    Eigen::VectorXd genForce;
 
     RigidBodyDynamics();
     void applyExternalForce(const int bodyId, const Vec3 &pos, const Vec6 &fext);
     // void applyExternalForce(const int jointId, const Vec3 &force);
-    void inverseDynamics(const ModelState &state, const ModelStateDerivative &dstate);
+    Eigen::VectorXd inverseDynamics(const ModelState &state, const ModelStateDerivative &dstate);
 
 };
 

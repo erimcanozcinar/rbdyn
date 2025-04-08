@@ -94,9 +94,7 @@ int main(int argc, char** argv) {
         TauJoint = robot->getMassMatrix().e()*robot->getUdot().e() + robot->getNonlinearities(world.getGravity()).e();
         RSINFO(TauJoint)       
         RSWARN(torqueFromInverseDynamics)
-        robotModel.inverseDynamics(robotState, robotDState);
-        jffTorques = robotModel.genForce;
-        
+        jffTorques = robotModel.inverseDynamics(robotState, robotDState);        
         /* #endregion */
 
         /* #region: PD control */

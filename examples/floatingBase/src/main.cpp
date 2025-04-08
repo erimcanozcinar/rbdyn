@@ -96,8 +96,7 @@ int main(int argc, char** argv) {
         RSWARN(torqueFromInverseDynamics)
         // RSINFO(fbDyn.inverseDynamics(robotState, robotDState));
         // Eigen::VectorXd a = fbDyn.inverseDynamics(robotState, robotDState);
-        robotModel.inverseDynamics(robotState, robotDState);
-        jffTorques = robotModel.genForce;
+        jffTorques = robotModel.inverseDynamics(robotState, robotDState);
         /* #endregion */
 
         /* #region: PD control */
