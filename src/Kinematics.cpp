@@ -161,8 +161,10 @@ Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& fr
     int iter = 0;
     int idxCol = 0;
 
-    if(!ik_init)
+    if(!ik_init) {
         stateIK.q = Q_init;
+        ik_init = true;
+    }
 
     if(model._jointTypes[0] == JointType::Floating) {
         idxCol = 6;

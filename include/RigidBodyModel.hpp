@@ -437,6 +437,8 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
 
     Eigen::Vector3d gravity;
 
+    RigidBodyModel() = default;
+
     RigidBodyModel(const std::string& urdf_file_path) {
         createModel(urdf_file_path);
         initDynamics(_urdf);
