@@ -30,7 +30,6 @@ class RigidBodyDynamics {
 
     RigidBodyDynamics();
     void applyExternalForce(const int bodyId, const Vec3 &pos, const Vec6 &fext);
-    // void applyExternalForce(const int jointId, const Vec3 &force);
     Eigen::VectorXd inverseDynamics(const ModelState &state, const ModelStateDerivative &dstate);
 
 };

@@ -292,7 +292,7 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
             std::cout << toString(type) << std::endl;
         }
         std::cout << "\n";
-        std::cout << "\033[32mJoint _urdf._parents: \033[0m" << std::endl;
+        std::cout << "\033[32mJoint Parents: \033[0m" << std::endl;
         for(std::string parent : _urdf._jointParents) {
             std::cout << parent << std::endl;
         }

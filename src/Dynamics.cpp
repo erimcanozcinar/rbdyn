@@ -69,22 +69,6 @@ void RigidBodyDynamics::applyExternalForce(const int bodyId, const Vec3 &pos, co
     _fext[bodyId] = (X.transpose()).inverse()*fext;
 }
 
-// /** Apply external force on joint in world frame.
-//  * Note: this method does not apply torque on joint. This method only apply force. 
-//  * If you want to apply torque on joint, simply apply torque on child body of the joint 
-// * @param[in] jointId Body index. It can be retrieved by getLinkID() or getBodyIdx().
-// * @param[in] force Forces acting on joint in body frame. (force = [forces]) */
-// void RigidBodyDynamics::applyExternalForce(const int jointId, const Vec3 &force) {
-//     sMat X = sMat::Zero();
-//     Vec6 fext = Vec6::Zero();
-//     fext.bottomRows<3>() = force;
-//     int bodyId = _model.jointParentIDs[jointId];
-//     X.topLeftCorner<3,3>() = _X0[bodyId].topLeftCorner<3,3>();
-//     X.bottomLeftCorner<3,3>() = _X0[bodyId].topLeftCorner<3,3>()*vectorToSkewMat(_model.jointLocations[jointId]);
-//     X.bottomRightCorner<3,3>() = _X0[bodyId].bottomRightCorner<3,3>();
-//     _fext[bodyId] = (X.transpose()).inverse()*fext;
-// }
-
 void RigidBodyDynamics::floatingBaseInvDyn() {
 
     sMat Xfb = sMat::Zero();

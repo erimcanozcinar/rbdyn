@@ -158,7 +158,7 @@ Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& fr
                                                       const double& err_tol, 
                                                       const int& max_iter) {
     
-    int iter = 0;
+    int iter;
     int idxCol = 0;
 
     if(!ik_init) {
@@ -177,6 +177,7 @@ Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& fr
     }
       
     for(int i=0; i<frameId.size(); i++) {
+        iter = 0;
         while(true) {            
             Eigen::MatrixXd J = bodyJacobian(frameId[i], stateIK).block(3,idxCol,3,model.nDof-idxCol);
             Vec3 pos = forwardKinematic(frameId[i], stateIK);
@@ -185,9 +186,9 @@ Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& fr
 
             iter++;
             if(iter > max_iter) {
-                std::cerr << "Error: Inverse kinematic could not be solved. Maximum iteration exeeded." << std::endl;
-                std::cerr << "Error norm:" << error.norm() << std::endl;
-                std::cerr << "Number of iteration:" << iter << std::endl;
+                std::cerr << "\033[33m[Warning]: \033[0mInverse kinematic could not be solved. Maximum iteration exeeded." << std::endl;
+                std::cerr << "\033[33m[Warning]: \033[0mError norm is " << error.norm() << std::endl;
+                std::cerr << "\033[33m[Warning]: \033[0mNumber of iteration is " << iter << std::endl;
                 break;
             }
 
