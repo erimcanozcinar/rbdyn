@@ -113,7 +113,6 @@ int main(int argc, char** argv) {
         F << 0, 0, 0, 0, 0, 0, Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(4)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(4));
         robot->setGeneralizedForce(F);
         /* #endregion */
-        // Dyn.applyExternalForce(2, Vec3(0,0,0.25), Vec6(0,0,0,10,0,0));
         // robot->setExternalForce(robot->getBodyIdx("link2"),{0,0,0.25},{10,0,0});
 
         server.integrateWorldThreadSafe();

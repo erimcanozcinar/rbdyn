@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
         jac << jacR, jacT;
         std::cout << "Jacobian Matrix Results" << std::endl;
         RSINFO(jac)
-        RSWARN(robotModel.bodyJacobian(robotModel.getFrameID("FL_foot_joint"),robotState));
+        RSWARN(robotModel.pointJacobian(robotModel.getFrameID("FL_foot_joint"),robotState));
         std::cout << "-----------------------" << std::endl;
         /* #endregion */
 

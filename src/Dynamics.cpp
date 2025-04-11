@@ -1,9 +1,5 @@
 #include "Dynamics.hpp"
 
-RigidBodyDynamics::RigidBodyDynamics() {
-    
-}
-
 void RigidBodyDynamics::initDynamics(ModelParameters urdf) {
     model = urdf;
     Mat6 eye6 = Mat6::Identity();
@@ -60,7 +56,7 @@ void RigidBodyDynamics::setJointAngles(int i, int &jIndex) {
 * @param[in] bodyId Body index. It can be retrieved by getLinkID() or getBodyIdx().
 * @param[in] fext Torques and forces acting on body in world frame. (fext = [torques; forces])
 * @param[in] pos Position of point with respec to body frame where the force is applied */
-void RigidBodyDynamics::applyExternalForce(const int bodyId, const Vec3 &pos, const Vec6 &fext) {
+void RigidBodyDynamics::applyExternalForce(const int bodyId, const Vec6 &fext, const Vec3 &pos) {
     sMat X = sMat::Zero();
     Vec3 pos_w = _X0[bodyId].topLeftCorner<3,3>().transpose()*pos;
     X.topLeftCorner<3,3>() = _X0[bodyId].topLeftCorner<3,3>();
@@ -70,7 +66,9 @@ void RigidBodyDynamics::applyExternalForce(const int bodyId, const Vec3 &pos, co
 }
 
 void RigidBodyDynamics::floatingBaseInvDyn() {
-
+    Vec6 vJ = Vec6::Zero();
+    sMat Xj = sMat::Zero();
+    
     sMat Xfb = sMat::Zero();
     // Xfb << _state.baseR, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), _state.baseR;
     _Xup[0] = spatialTransform(_state.baseR, _state.basePosition)*model._Xtree[0];
@@ -81,8 +79,7 @@ void RigidBodyDynamics::floatingBaseInvDyn() {
     int jIndex = 0;
     for(int i = 1; i < model.nBody; i++) {
         setJointAngles(i, jIndex);
-        Vec6 vJ = Vec6::Zero();
-        sMat Xj = sMat::Zero();
+        
         Xj = jointSpatialTransform(model._jointTypes[i], model._jointAxes[i], model._jointAxisCoef[i]*model._q[i]);
         _Xup[i] = Xj*model._Xtree[i];
         _X0[i] = _Xup[i]*_X0[model._parents[i]];

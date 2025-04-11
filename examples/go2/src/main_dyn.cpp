@@ -19,13 +19,14 @@ int main(int argc, char** argv) {
     
   
     /* #region: Initialize Robot */
-    genCoordinates << 0,0,0.7,1,0, 0, 0, 
-                      0*M_PI/180, 45*M_PI/180, -80*M_PI/180, 
-                     -0*M_PI/180, 45*M_PI/180, -80*M_PI/180, 
-                      0*M_PI/180, 45*M_PI/180, -80*M_PI/180, 
-                     -0*M_PI/180, 45*M_PI/180, -80*M_PI/180; 
+    genCoordinates << 0,0,0.42,1,0, 0, 0, 
+                      0*M_PI/180, 30*M_PI/180, -60*M_PI/180, 
+                     -0*M_PI/180, 30*M_PI/180, -60*M_PI/180, 
+                      0*M_PI/180, 30*M_PI/180, -60*M_PI/180, 
+                     -0*M_PI/180, 30*M_PI/180, -60*M_PI/180; 
     genVelocity << 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
     Q_init.resize(12);
+    refQ.resize(12);
     Q_init = genCoordinates.tail(12);
     robot->setGeneralizedCoordinate(genCoordinates);
     robot->setGeneralizedVelocity(genVelocity);
@@ -34,8 +35,10 @@ int main(int argc, char** argv) {
     /* #region: Create Log file */
     FILE* Tau_rbdyn;
     FILE* Tau_rs1;
+    FILE* test;
     Tau_rbdyn = fopen("/home/erim/rbdyn/examples/go2/Log/rbdynLog.txt", "w");
     Tau_rs1 = fopen("/home/erim/rbdyn/examples/go2/Log/rs1Log.txt", "w");
+    test = fopen("/home/erim/rbdyn/examples/go2/Log/test.txt", "w");
     /* #endregion */
     
     /* #region: Launch raisim server for visualization.Can be visualized on raisimUnity */
@@ -51,6 +54,10 @@ int main(int argc, char** argv) {
     std::vector<Eigen::Vector3d> axes(robot->getDOF());
     torqueFromInverseDynamics.setZero();
     Vec6 Fex_FL, Fex_FR, Fex_RL, Fex_RR;
+
+    int max_dur = 0;
+    int iter = 0;
+    int dur_sum = 0;
     
     while (1) {
         RS_TIMED_LOOP(int(world.getTimeStep()*1e6));
@@ -98,11 +105,38 @@ int main(int argc, char** argv) {
         robotDState.ddq = robot->getGeneralizedAcceleration().e().tail(12);
         /* #endregion */
 
-        /* #region: Kinematics */
-        robotModel.forwardKinematic(robotModel.getFrameID("FL_foot_joint"), robotState);
-        robotModel.inverseKinematic({robotModel.getFrameID("FL_foot_joint")}, {Vec3(0.1934,0.1420,0)}, genCoordinates.tail(12), robotState.basePosition, robotState.baseR);
+        auto start = std::chrono::high_resolution_clock().now();
+        /* #region: Inverse Kinematics */
+        refQ = robotModel.inverseKinematic({robotModel.getFrameID("FL_foot_joint"),
+                                     robotModel.getFrameID("FR_foot_joint"),
+                                     robotModel.getFrameID("RL_foot_joint"),
+                                     robotModel.getFrameID("RR_foot_joint")}, 
+                                    {Vec3(0.1934,0.1420,0), Vec3(0.1934,-0.1420,0), Vec3(-0.1934,0.1420,0), Vec3(-0.1934,-0.1420,0)}, 
+                                    Q_init, Vec3(0,0,0.3+0.06*sin(2*M_PI*0.2*t)), RotMat::Identity());
         /* #endregion */
+                
+        /* #region: RBDYN inverse dynamics*/
+        jffTorques = robotModel.inverseDynamics(robotState,robotDState);
+        Fex_FL << 0,0,0,Fcon_FL;
+        Fex_FR << 0,0,0,Fcon_FR;
+        Fex_RL << 0,0,0,Fcon_RL;
+        Fex_RR << 0,0,0,Fcon_RR;
+        robotModel.applyExternalForce(robotModel.getBodyID("FL_foot"), Fex_FL);
+        robotModel.applyExternalForce(robotModel.getBodyID("FR_foot"), Fex_FR);
+        robotModel.applyExternalForce(robotModel.getBodyID("RL_foot"), Fex_RL);
+        robotModel.applyExternalForce(robotModel.getBodyID("RR_foot"), Fex_RR);
+        /* #endregion */
+        auto end = std::chrono::high_resolution_clock().now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        std::cout << "Execution time: " << duration.count() << " us" << std::endl;
+        iter += 1;
+        int dur = duration.count();
+        dur_sum += dur;
+        if(dur > max_dur)
+            max_dur = dur;
+        RSWARN(dur_sum/iter)
         
+        /* #region: Rasim inverse dynamics */
         for (int j=0; j<robot->getDOF()-6; j++) {
             axes[j] = robot->getJointAxis(j+1).e();
         }
@@ -113,34 +147,11 @@ int main(int argc, char** argv) {
         for (size_t j=1; j<robot->getDOF()-5; j++){
             torqueFromInverseDynamics(j+5) = (robot->getTorqueAtJointInWorldFrame(j).e()).dot(axes[j-1]);
         }
+        /* #endregion */
 
-        jffTorques = robotModel.inverseDynamics(robotState,robotDState);
-        Fex_FL << 0,0,0,Fcon_FL;
-        Fex_FR << 0,0,0,Fcon_FR;
-        Fex_RL << 0,0,0,Fcon_RL;
-        Fex_RR << 0,0,0,Fcon_RR;
-        robotModel.applyExternalForce(robotModel.getBodyID("FL_foot"), Vec3(0,0,0), Fex_FL);
-        robotModel.applyExternalForce(robotModel.getBodyID("FR_foot"), Vec3(0,0,0), Fex_FR);
-        robotModel.applyExternalForce(robotModel.getBodyID("RL_foot"), Vec3(0,0,0), Fex_RL);
-        robotModel.applyExternalForce(robotModel.getBodyID("RR_foot"), Vec3(0,0,0), Fex_RR);
-
-        // RSWARN(Pcon_FL)
-        // RSINFO(jffTorques)
-        
+             
 
         /* #region: PD control */
-        if(t>=5) {
-            refQ << 0*M_PI/180, 45*M_PI/180 + (10*M_PI/180)*sin(2*M_PI*0.2*t), -80*M_PI/180 - (20*M_PI/180)*sin(2*M_PI*0.2*t),
-                   -0*M_PI/180, 45*M_PI/180 + (10*M_PI/180)*sin(2*M_PI*0.2*t), -80*M_PI/180 - (20*M_PI/180)*sin(2*M_PI*0.2*t),
-                    0*M_PI/180, 45*M_PI/180 + (10*M_PI/180)*sin(2*M_PI*0.2*t), -80*M_PI/180 - (20*M_PI/180)*sin(2*M_PI*0.2*t),
-                   -0*M_PI/180, 45*M_PI/180 + (10*M_PI/180)*sin(2*M_PI*0.2*t), -80*M_PI/180 - (20*M_PI/180)*sin(2*M_PI*0.2*t);
-        } else{
-            refQ << 0*M_PI/180, 45*M_PI/180, -80*M_PI/180,
-                   -0*M_PI/180, 45*M_PI/180, -80*M_PI/180,
-                    0*M_PI/180, 45*M_PI/180, -80*M_PI/180,
-                   -0*M_PI/180, 45*M_PI/180, -80*M_PI/180;
-        }
-
         refdQ.setZero();
         Eigen::MatrixXd Kp(12,12), Kd(12,12);
         Kp.setIdentity(); Kd.setIdentity();
@@ -152,6 +163,7 @@ int main(int argc, char** argv) {
 
         server.integrateWorldThreadSafe();
 
+        fprintf(test, "%f %i\n", t, dur);
         fprintf(Tau_rbdyn, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", t, jffTorques(0), jffTorques(1), jffTorques(2), jffTorques(3), jffTorques(4), jffTorques(5), jffTorques(6), jffTorques(7), jffTorques(8), jffTorques(9), jffTorques(10), jffTorques(11), jffTorques(12), jffTorques(13), jffTorques(14), jffTorques(15), jffTorques(16), jffTorques(17));   
         fprintf(Tau_rs1, "%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n", t, torqueFromInverseDynamics(0), torqueFromInverseDynamics(1), torqueFromInverseDynamics(2), torqueFromInverseDynamics(3), torqueFromInverseDynamics(4), torqueFromInverseDynamics(5), torqueFromInverseDynamics(6), torqueFromInverseDynamics(7), torqueFromInverseDynamics(8), torqueFromInverseDynamics(9), torqueFromInverseDynamics(10), torqueFromInverseDynamics(11), torqueFromInverseDynamics(12), torqueFromInverseDynamics(13), torqueFromInverseDynamics(14), torqueFromInverseDynamics(15), torqueFromInverseDynamics(16), torqueFromInverseDynamics(17));
     }

@@ -114,7 +114,7 @@ int main(int argc, char** argv) {
         F << 0, 0, 0, 0, 0, 0, Kp*(refQ - robot->getGeneralizedCoordinate().e().tail(12)) + Kd*(refdQ - robot->getGeneralizedVelocity().e().tail(12));
         robot->setGeneralizedForce(F);
         /* #endregion */
-        robotModel.applyExternalForce(robot->getBodyIdx("torso"), Vec3(0,0,0), Vec6(0,0,0,10,0,0));
+        robotModel.applyExternalForce(robot->getBodyIdx("torso"), Vec6(0,0,0,10,0,0));
         robot->setExternalForce(robot->getBodyIdx("torso"),{0,0,0},{10,0,0});
 
         server.integrateWorldThreadSafe();

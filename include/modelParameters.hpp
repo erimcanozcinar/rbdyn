@@ -6,7 +6,7 @@ using namespace spatial;
 
 struct ModelState {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Eigen::Vector3d basePosition;
+    Vec3 basePosition;
     Eigen::Quaterniond baseOrientation;
     RotMat baseR;
     Vec6 baseVelocity;  // body coordinates
@@ -16,7 +16,7 @@ struct ModelState {
 
 struct ModelStateDerivative {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Eigen::Vector3d dBasePosition;
+    Vec3 dBasePosition;
     Vec6 dBaseVelocity;
     Eigen::Matrix<double, -1, 1> ddq;
 };
@@ -29,10 +29,10 @@ struct ModelParameters {
 
     std::vector<std::string> _linkNames;
     std::vector<int> _linkIDs;
-    std::vector<Eigen::Vector3d> _linkCOMs;
-    std::vector<Eigen::Vector3d> _linkRots;
+    std::vector<Vec3> _linkCOMs;
+    std::vector<Vec3> _linkRots;
     std::vector<double> _linkMasses;
-    std::vector<Eigen::Matrix3d> _linkInertias;
+    std::vector<Mat3> _linkInertias;
 
     std::vector<std::string> _jointNames;
     std::vector<int> _jointIDs;
@@ -40,8 +40,8 @@ struct ModelParameters {
     std::vector<int> _jointParentIDs;
     std::vector<std::string> _jointChilds;    
     std::vector<int> _jointChildIDs;
-    std::vector<Eigen::Vector3d> _jointLocations;
-    std::vector<Eigen::Vector3d> _jointRotations;
+    std::vector<Vec3> _jointLocations;
+    std::vector<Vec3> _jointRotations;
 
     std::vector<JointType> _jointTypes;
     std::vector<CoordinateAxis> _jointAxes; 

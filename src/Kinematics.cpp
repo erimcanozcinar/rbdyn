@@ -50,6 +50,7 @@ void RigidBodyKinematics::setJointAngles(int i, int &jIndex) {
 Vec3 RigidBodyKinematics::homogenousFK(const int& frameId, const ModelState& state, const Vec3& pos) {
     setState(state);
     int jIndex = 0;
+    
     for(int i = 1; i < model.nBody; i++)
         setJointAngles(i,jIndex);
     
@@ -65,6 +66,7 @@ Vec3 RigidBodyKinematics::homogenousFK(const int& frameId, const ModelState& sta
         _T0[0] = _T[0];
     }
 
+    
     for(int i : model._pathJoints[frameId]) {
         Xj = jointSpatialTransform(model._jointTypes[i],model._jointAxes[i], model._jointAxisCoef[i]*model._q[i]);
         _Xup[i] = Xj*model._Xtree[i];
@@ -87,6 +89,7 @@ Vec3 RigidBodyKinematics::homogenousFK(const int& frameId, const ModelState& sta
 Vec3 RigidBodyKinematics::forwardKinematic(const int& frameId, const ModelState& state, const Vec3& pos) {
     setState(state);
     int jIndex = 0;
+    
     for(int i = 1; i < model.nBody; i++)
         setJointAngles(i,jIndex);
     
@@ -98,6 +101,7 @@ Vec3 RigidBodyKinematics::forwardKinematic(const int& frameId, const ModelState&
         _Xa[0] = spatialTransform(_state.baseR, _state.basePosition);
     }
 
+    
     for(int i : model._pathJoints[frameId]) {
         Xj = jointSpatialTransform(model._jointTypes[i],model._jointAxes[i], model._jointAxisCoef[i]*model._q[i]);
         _Xa[i] = Xj*model._Xtree[i];
@@ -116,17 +120,18 @@ Vec3 RigidBodyKinematics::forwardKinematic(const int& frameId, const ModelState&
  * @param[in] pos Desired point position wrt frame. (By default it is set to zero)
  * @param[out] out Jacobian matrix (6x1) wrt world frame.
  */
-Eigen::MatrixXd RigidBodyKinematics::bodyJacobian(const int& frameId, const ModelState& state, const Vec3& pos) {
+Eigen::MatrixXd RigidBodyKinematics::pointJacobian(const int& frameId, const ModelState& state, const Vec3& pos) {
     Vec3 r = forwardKinematic(frameId, state, pos);
     sMat Xbody = spatialTransform(RotMat::Identity(), -r);
 
-    Eigen::MatrixXd bodyJac(6,model.nDof);
-    bodyJac.setZero();
+    Eigen::MatrixXd JacMat(6,model.nDof);
+    JacMat.setZero();
 
     if(model._jointTypes[0] == JointType::Floating) {
-        bodyJac.block<6,6>(0,0) = (_Xa[0]*Xbody).inverse();
+        JacMat.block<6,6>(0,0) = (_Xa[0]*Xbody).inverse();
     }
 
+    
     for(int i : model._pathJoints[frameId]) {
         auto it = std::find(model._movalbeJoints.begin(), model._movalbeJoints.end(),i);
         int idx = 0;        
@@ -137,10 +142,10 @@ Eigen::MatrixXd RigidBodyKinematics::bodyJacobian(const int& frameId, const Mode
 
         if(model._jointTypes[i] != JointType::Fixed) {
             _S[i] = jointMotionSubspace(model._jointTypes[i], model._jointAxes[i], model._jointAxisCoef[i]);  
-            bodyJac.col(idx) = (_Xa[i]*Xbody).inverse()*_S[i];
+            JacMat.col(idx) = (_Xa[i]*Xbody).inverse()*_S[i];
         }
     }
-    return bodyJac;
+    return JacMat;
 }
 
 /** Solves inverse kinematic for given body position wrt world frame.
@@ -176,10 +181,11 @@ Eigen::VectorXd RigidBodyKinematics::inverseKinematic(const std::vector<int>& fr
         stateIK.basePosition = translationFromX(_Xa[0]);
     }
       
+    
     for(int i=0; i<frameId.size(); i++) {
         iter = 0;
         while(true) {            
-            Eigen::MatrixXd J = bodyJacobian(frameId[i], stateIK).block(3,idxCol,3,model.nDof-idxCol);
+            Eigen::MatrixXd J = pointJacobian(frameId[i], stateIK).block(3,idxCol,3,model.nDof-idxCol);
             Vec3 pos = forwardKinematic(frameId[i], stateIK);
             Vec3 error = desPos[i] - pos;
             stateIK.q = stateIK.q + J.completeOrthogonalDecomposition().pseudoInverse()*error;

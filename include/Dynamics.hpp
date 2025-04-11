@@ -28,8 +28,8 @@ class RigidBodyDynamics {
     public: 
 
 
-    RigidBodyDynamics();
-    void applyExternalForce(const int bodyId, const Vec3 &pos, const Vec6 &fext);
+    RigidBodyDynamics() = default;
+    void applyExternalForce(const int bodyId, const Vec6 &fext, const Vec3 &pos = Vec3::Zero());
     Eigen::VectorXd inverseDynamics(const ModelState &state, const ModelStateDerivative &dstate);
 
 };
