@@ -16,12 +16,29 @@ void RigidBodyKinematics::initKinematics(ModelParameters urdf) {
         _S.push_back(zero6);
     }
 
-    if(model._jointTypes[0] == JointType::Floating)
+    if(model._jointTypes[0] == JointType::Floating){
+        _state.q.resize(model.nDof-6);
+        _state.dq.resize(model.nDof-6);
+        _dstate.ddq.resize(model.nDof-6);
         stateIK.q.resize(model.nDof-6);
-    else
+        stateIK.dq.resize(model.nDof-6);
+        dstateIK.ddq.resize(model.nDof-6);
+    } else {
+        _state.q.resize(model.nDof-6);
+        _state.dq.resize(model.nDof-6);
+        _dstate.ddq.resize(model.nDof-6);
         stateIK.q.resize(model.nDof);
-
+        stateIK.dq.resize(model.nDof);
+        dstateIK.ddq.resize(model.nDof);
+    }
+    _state.q.setZero();
+    _state.dq.setZero();
+    _dstate.ddq.setZero();
     stateIK.q.setZero();
+    stateIK.dq.setZero();
+    dstateIK.ddq.setZero();
+
+
 }
 
 void RigidBodyKinematics::setState(const ModelState& state) {
@@ -35,8 +52,8 @@ void RigidBodyKinematics::setDState(const ModelStateDerivative& dstate) {
 void RigidBodyKinematics::setJointAngles(int i, int &jIndex) {
     if(model._jointTypes[i] != JointType::Fixed) {
         model._q[i] = _state.q[jIndex];
-        // model._dq[i] = _state.dq[jIndex];
-        // model._ddq[i] = _dstate.ddq[jIndex];
+        model._dq[i] = _state.dq[jIndex];
+        model._ddq[i] = _dstate.ddq[jIndex];
         jIndex++;
     }    
 }

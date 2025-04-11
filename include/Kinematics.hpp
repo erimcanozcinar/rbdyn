@@ -13,6 +13,7 @@ class RigidBodyKinematics {
     vectorAligned<Vec6> _S;
 
     ModelState stateIK;
+    ModelStateDerivative dstateIK;
     bool ik_init = false;
 
 

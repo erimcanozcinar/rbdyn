@@ -105,7 +105,6 @@ int main(int argc, char** argv) {
         robotDState.ddq = robot->getGeneralizedAcceleration().e().tail(12);
         /* #endregion */
 
-        auto start = std::chrono::high_resolution_clock().now();
         /* #region: Inverse Kinematics */
         refQ = robotModel.inverseKinematic({robotModel.getFrameID("FL_foot_joint"),
                                      robotModel.getFrameID("FR_foot_joint"),
@@ -116,16 +115,8 @@ int main(int argc, char** argv) {
         /* #endregion */
                 
         /* #region: RBDYN inverse dynamics*/
+        auto start = std::chrono::high_resolution_clock().now();
         jffTorques = robotModel.inverseDynamics(robotState,robotDState);
-        Fex_FL << 0,0,0,Fcon_FL;
-        Fex_FR << 0,0,0,Fcon_FR;
-        Fex_RL << 0,0,0,Fcon_RL;
-        Fex_RR << 0,0,0,Fcon_RR;
-        robotModel.applyExternalForce(robotModel.getBodyID("FL_foot"), Fex_FL);
-        robotModel.applyExternalForce(robotModel.getBodyID("FR_foot"), Fex_FR);
-        robotModel.applyExternalForce(robotModel.getBodyID("RL_foot"), Fex_RL);
-        robotModel.applyExternalForce(robotModel.getBodyID("RR_foot"), Fex_RR);
-        /* #endregion */
         auto end = std::chrono::high_resolution_clock().now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         std::cout << "Execution time: " << duration.count() << " us" << std::endl;
@@ -135,6 +126,17 @@ int main(int argc, char** argv) {
         if(dur > max_dur)
             max_dur = dur;
         RSWARN(dur_sum/iter)
+
+        Fex_FL << 0,0,0,Fcon_FL;
+        Fex_FR << 0,0,0,Fcon_FR;
+        Fex_RL << 0,0,0,Fcon_RL;
+        Fex_RR << 0,0,0,Fcon_RR;
+        robotModel.applyExternalForce(robotModel.getBodyID("FL_foot"), Fex_FL);
+        robotModel.applyExternalForce(robotModel.getBodyID("FR_foot"), Fex_FR);
+        robotModel.applyExternalForce(robotModel.getBodyID("RL_foot"), Fex_RL);
+        robotModel.applyExternalForce(robotModel.getBodyID("RR_foot"), Fex_RR);
+        /* #endregion */
+       
         
         /* #region: Rasim inverse dynamics */
         for (int j=0; j<robot->getDOF()-6; j++) {
