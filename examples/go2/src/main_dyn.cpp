@@ -19,11 +19,11 @@ int main(int argc, char** argv) {
     
   
     /* #region: Initialize Robot */
-    genCoordinates << 0,0,0.42,1,0, 0, 0, 
-                      0*M_PI/180, 30*M_PI/180, -60*M_PI/180, 
-                     -0*M_PI/180, 30*M_PI/180, -60*M_PI/180, 
-                      0*M_PI/180, 30*M_PI/180, -60*M_PI/180, 
-                     -0*M_PI/180, 30*M_PI/180, -60*M_PI/180; 
+    genCoordinates << 0,0,0.2965,1,0, 0, 0, 
+                      0*M_PI/180, 51.9673*M_PI/180, -100.1530*M_PI/180, 
+                     -0*M_PI/180, 51.9673*M_PI/180, -100.1530*M_PI/180, 
+                      0*M_PI/180, 51.9673*M_PI/180, -100.1530*M_PI/180, 
+                     -0*M_PI/180, 51.9673*M_PI/180, -100.1530*M_PI/180; 
     genVelocity << 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
     Q_init.resize(12);
     refQ.resize(12);
@@ -106,17 +106,19 @@ int main(int argc, char** argv) {
         /* #endregion */
 
         /* #region: Inverse Kinematics */
+        double hsin;
+        if(t>3)
+            hsin = 0.06*sin(2*M_PI*0.2*(t-3));
+        else
+            hsin = 0;
+
+        auto start = std::chrono::high_resolution_clock().now();
         refQ = robotModel.inverseKinematic({robotModel.getFrameID("FL_foot_joint"),
                                      robotModel.getFrameID("FR_foot_joint"),
                                      robotModel.getFrameID("RL_foot_joint"),
                                      robotModel.getFrameID("RR_foot_joint")}, 
                                     {Vec3(0.1934,0.1420,0), Vec3(0.1934,-0.1420,0), Vec3(-0.1934,0.1420,0), Vec3(-0.1934,-0.1420,0)}, 
-                                    Q_init, Vec3(0,0,0.3+0.06*sin(2*M_PI*0.2*t)), RotMat::Identity());
-        /* #endregion */
-                
-        /* #region: RBDYN inverse dynamics*/
-        auto start = std::chrono::high_resolution_clock().now();
-        jffTorques = robotModel.inverseDynamics(robotState,robotDState);
+                                    Q_init, Vec3(0,0,0.2965+hsin), RotMat::Identity());
         auto end = std::chrono::high_resolution_clock().now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
         std::cout << "Execution time: " << duration.count() << " us" << std::endl;
@@ -126,7 +128,9 @@ int main(int argc, char** argv) {
         if(dur > max_dur)
             max_dur = dur;
         RSWARN(dur_sum/iter)
-
+        /* #endregion */
+                
+        /* #region: RBDYN inverse dynamics*/
         Fex_FL << 0,0,0,Fcon_FL;
         Fex_FR << 0,0,0,Fcon_FR;
         Fex_RL << 0,0,0,Fcon_RL;
@@ -135,6 +139,18 @@ int main(int argc, char** argv) {
         robotModel.applyExternalForce(robotModel.getBodyID("FR_foot"), Fex_FR);
         robotModel.applyExternalForce(robotModel.getBodyID("RL_foot"), Fex_RL);
         robotModel.applyExternalForce(robotModel.getBodyID("RR_foot"), Fex_RR);
+
+        // auto start = std::chrono::high_resolution_clock().now();
+        jffTorques = robotModel.inverseDynamics(robotState,robotDState);
+        // auto end = std::chrono::high_resolution_clock().now();
+        // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+        // std::cout << "Execution time: " << duration.count() << " us" << std::endl;
+        // iter += 1;
+        // int dur = duration.count();
+        // dur_sum += dur;
+        // if(dur > max_dur)
+        //     max_dur = dur;
+        // RSWARN(dur_sum/iter)        
         /* #endregion */
        
         
