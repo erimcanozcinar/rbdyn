@@ -127,18 +127,24 @@ int main(int argc, char** argv) {
         dur_sum += dur;
         if(dur > max_dur)
             max_dur = dur;
-        RSWARN(dur_sum/iter)
+        // RSWARN(dur_sum/iter)        
         /* #endregion */
-                
+        
+        raisim::Vec<3> PfootJoint_FL, PfootJoint_FR, PfootJoint_RL, PfootJoint_RR;
+        robot->getFramePosition(robot->getFrameIdxByName("FL_foot_joint"),PfootJoint_FL);
+        robot->getFramePosition(robot->getFrameIdxByName("FR_foot_joint"),PfootJoint_FR);
+        robot->getFramePosition(robot->getFrameIdxByName("RL_foot_joint"),PfootJoint_RL);
+        robot->getFramePosition(robot->getFrameIdxByName("RR_foot_joint"),PfootJoint_RR);
+        RSWARN(Pcon_FL-PfootJoint_FL.e())
         /* #region: RBDYN inverse dynamics*/
         Fex_FL << 0,0,0,Fcon_FL;
         Fex_FR << 0,0,0,Fcon_FR;
         Fex_RL << 0,0,0,Fcon_RL;
         Fex_RR << 0,0,0,Fcon_RR;
-        robotModel.applyExternalForce(robotModel.getBodyID("FL_foot"), Fex_FL);
-        robotModel.applyExternalForce(robotModel.getBodyID("FR_foot"), Fex_FR);
-        robotModel.applyExternalForce(robotModel.getBodyID("RL_foot"), Fex_RL);
-        robotModel.applyExternalForce(robotModel.getBodyID("RR_foot"), Fex_RR);
+        robotModel.applyExternalForce(robotModel.getBodyID("FL_foot"),Fex_FL, Pcon_FL-PfootJoint_FL.e());
+        robotModel.applyExternalForce(robotModel.getBodyID("FR_foot"),Fex_FR, Pcon_FR-PfootJoint_FR.e());
+        robotModel.applyExternalForce(robotModel.getBodyID("RL_foot"),Fex_RL, Pcon_RL-PfootJoint_RL.e());
+        robotModel.applyExternalForce(robotModel.getBodyID("RR_foot"),Fex_RR, Pcon_RR-PfootJoint_RR.e());        
 
         // auto start = std::chrono::high_resolution_clock().now();
         jffTorques = robotModel.inverseDynamics(robotState,robotDState);
@@ -166,8 +172,7 @@ int main(int argc, char** argv) {
             torqueFromInverseDynamics(j+5) = (robot->getTorqueAtJointInWorldFrame(j).e()).dot(axes[j-1]);
         }
         /* #endregion */
-
-             
+        
 
         /* #region: PD control */
         refdQ.setZero();
