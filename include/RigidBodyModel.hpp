@@ -72,31 +72,52 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
         linkID++;
         _urdf._linkNames.push_back(std::string(link->Attribute("name")));
         _urdf._linkIDs.push_back(linkID);
-        const char* xyz = link->FirstChildElement("inertial")->FirstChildElement("origin")->Attribute("xyz");
-        const char* rpy = link->FirstChildElement("inertial")->FirstChildElement("origin")->Attribute("rpy");
-        Eigen::Vector3d pCOM;
-        Eigen::Vector3d rCOM;
-        pCOM = string2Vec(xyz);
-        rCOM = string2Vec(rpy);
-        _urdf._linkCOMs.push_back(pCOM);
-        _urdf._linkRots.push_back(rCOM);
 
-        double mass;
-        link->FirstChildElement("inertial")->FirstChildElement("mass")->QueryDoubleAttribute("value", &mass);
-        _urdf._linkMasses.push_back(mass);
+        if(link->FirstChildElement("inertial")) {
+            if(link->FirstChildElement("inertial")->FirstChildElement("origin")) {
+                const char* xyz = link->FirstChildElement("inertial")->FirstChildElement("origin")->Attribute("xyz");
+                const char* rpy = link->FirstChildElement("inertial")->FirstChildElement("origin")->Attribute("rpy");
+                Eigen::Vector3d pCOM;
+                Eigen::Vector3d rCOM;
+                pCOM = string2Vec(xyz);
+                rCOM = string2Vec(rpy);
+                _urdf._linkCOMs.push_back(pCOM);
+                _urdf._linkRots.push_back(rCOM);
+            } else {
+                _urdf._linkCOMs.push_back(Vec3::Zero());
+                _urdf._linkRots.push_back(Vec3::Zero());
+            }
+            
+            if(link->FirstChildElement("inertial")->FirstChildElement("mass")) {
+                double mass;
+                link->FirstChildElement("inertial")->FirstChildElement("mass")->QueryDoubleAttribute("value", &mass);
+                _urdf._linkMasses.push_back(mass);
+            } else {
+                _urdf._linkMasses.push_back(0);
+            }
 
-        double Ixx, Ixy, Ixz, Iyy, Iyz, Izz;
-        Eigen::Matrix3d inertiaTensor;
-        link->FirstChildElement("inertial")->FirstChildElement("inertia")->QueryDoubleAttribute("ixx", &Ixx);
-        link->FirstChildElement("inertial")->FirstChildElement("inertia")->QueryDoubleAttribute("ixy", &Ixy);
-        link->FirstChildElement("inertial")->FirstChildElement("inertia")->QueryDoubleAttribute("ixz", &Ixz);
-        link->FirstChildElement("inertial")->FirstChildElement("inertia")->QueryDoubleAttribute("iyy", &Iyy);
-        link->FirstChildElement("inertial")->FirstChildElement("inertia")->QueryDoubleAttribute("iyz", &Iyz);
-        link->FirstChildElement("inertial")->FirstChildElement("inertia")->QueryDoubleAttribute("izz", &Izz);
-        inertiaTensor << Ixx, Ixy, Ixz,
-                   Ixy, Iyy, Iyz,
-                   Ixz, Iyz, Izz;
-        _urdf._linkInertias.push_back(inertiaTensor);   
+            if(link->FirstChildElement("inertial")->FirstChildElement("inertia")) {
+                double Ixx, Ixy, Ixz, Iyy, Iyz, Izz;
+                Eigen::Matrix3d inertiaTensor;
+                link->FirstChildElement("inertial")->FirstChildElement("inertia")->QueryDoubleAttribute("ixx", &Ixx);
+                link->FirstChildElement("inertial")->FirstChildElement("inertia")->QueryDoubleAttribute("ixy", &Ixy);
+                link->FirstChildElement("inertial")->FirstChildElement("inertia")->QueryDoubleAttribute("ixz", &Ixz);
+                link->FirstChildElement("inertial")->FirstChildElement("inertia")->QueryDoubleAttribute("iyy", &Iyy);
+                link->FirstChildElement("inertial")->FirstChildElement("inertia")->QueryDoubleAttribute("iyz", &Iyz);
+                link->FirstChildElement("inertial")->FirstChildElement("inertia")->QueryDoubleAttribute("izz", &Izz);
+                inertiaTensor << Ixx, Ixy, Ixz,
+                        Ixy, Iyy, Iyz,
+                        Ixz, Iyz, Izz;
+                _urdf._linkInertias.push_back(inertiaTensor);
+            } else {
+                _urdf._linkInertias.push_back(Mat3::Zero());   
+            }
+        } else {
+            _urdf._linkCOMs.push_back(Vec3::Zero());
+            _urdf._linkRots.push_back(Vec3::Zero());
+            _urdf._linkMasses.push_back(0.0);
+            _urdf._linkInertias.push_back(Mat3::Zero());            
+        }   
     }
 
     void parseJoint(const tinyxml2::XMLElement* joint) {
@@ -462,7 +483,7 @@ class RigidBodyModel : public RigidBodyDynamics, public RigidBodyKinematics {
         if (it != _urdf._jointNames.end()) {
             return std::distance(_urdf._jointNames.begin(), it);  // Return the index of the found link
         } else {
-            throw std::runtime_error("Joint does not exist");
+            throw std::runtime_error("Joint does not exist!");
             return -1;
         }
     }
